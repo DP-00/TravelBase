@@ -28,19 +28,19 @@ html {
     background-color: var(--background);
 }
 
-#info-container, button, input[type="submit"]{
+#info-container, button, input[type="submit"], #button-container label{
     z-index: 2;
     background-color:var(--background);
     border-radius: 1rem;
     box-shadow: inset 0px 0px 7px 2px var(--dark-background);
 }
 
-button, input[type="submit"] {
+button, input[type="submit"], #button-container label {
     color: var(--font);
     padding: 0.3rem;
 }
 
-button:hover, input[type="submit"]:hover {
+button:hover, input[type="submit"]:hover, #button-container input[type="radio"]:hover + label, #button-container input[type="radio"]:checked + label  {
     background-color:var(--dark-background);
     cursor: pointer;
 }
@@ -53,6 +53,12 @@ button:hover, input[type="submit"]:hover {
     display: flex;
     flex-direction: column-reverse;
     justify-content: space-evenly;
+}
+
+#button-container input[type="radio"] {
+    opacity: 0;
+    position: fixed;
+    width: 0;
 }
 
 #button-container img {
@@ -77,3 +83,51 @@ button:hover, input[type="submit"]:hover {
     resize: both;
     overflow: auto;
 } 
+
+#info-container h2{
+    padding: 1rem;
+}
+
+/* BASEMAP */
+
+#basemap-container div {
+    display: flex;
+    flex-wrap: wrap; 
+    justify-content: space-evenly;
+    gap: 1rem 0rem;
+}
+
+.basemap {
+    position: relative;
+    width: 7rem;
+    height: 8rem;
+}
+
+.basemap p{
+    position: absolute;
+    top: 7rem;
+    font-weight: bold;
+    text-align: center;
+    width: 6rem;
+}
+
+.basemap input[type="checkbox"][id^="checkbox"] {
+    display: none;
+} 
+
+.basemap label {
+    border: 0.5rem solid var(--background);
+    border-radius: 1rem;
+    position: absolute;
+    cursor: pointer;
+}
+
+.basemap input[type="checkbox"]:checked + label {
+    border: 0.5rem solid var(--font);
+} 
+
+.basemap label img {
+    height: 5rem;
+    width: 5rem;
+}
+
