@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelBase</title>
+
+    <!-- Open Layers + extensions -->
+    <link rel="stylesheet" href="src/ol/ol.css">
+    <script src="src/ol/ol.js" type="text/javascript"></script>
+
+    <!-- My files -->
+    <link rel="stylesheet" href="styles.css" type="text/css">
+    
+</head>
+<body>
+    <main>
+        <div id="map"></div>
+
+        <div id="button-container">
+            <button id="basemap-button" onclick="menuButton(this.id)"><img src="icons/basemap.png" alt="basemap icon"></button>
+            <button id="layer-button" onclick="menuButton(this.id)"><img src="icons/layers.png" alt="layer icon"></button>
+            <button id="add-button" onclick="menuButton(this.id)"><img src="icons/add.png" alt="add icon"></button>
+            <button id="filter-button" onclick="menuButton(this.id)"><img src="icons/filter.png" alt="filter icon"></button>  
+            <button id="trips-button" onclick="menuButton(this.id)"><img src="icons/trips.png" alt="trips icon"></button>           
+        </div>
+
+        <div id="info-container">
+            <div id="basemap-container">
+                <h2>BASEMAP</h2>
+                <div>                   
+                </div>
+            </div> 
+            <div id="layer-container">
+                <h2>LAYER</h2>
+                <div>                   
+                </div>
+            </div>
+            <div id="add-container">
+                <h2>ADD</h2>
+                <div>                   
+                </div>
+            </div> 
+            <div id="filter-container">
+                <h2>FILTER</h2>
+                <div>                   
+                </div>
+            </div> 
+            <div id="trips-container">
+                <h2>TRIPS</h2>
+                <div>                   
+                </div>
+            </div> 
+        </div>
+    </main>
+
+    <!-- My files -->
+    <script src="map.js"></script> <!-- Need to be here, not in the head-->
+</body>
+</html>
