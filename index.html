@@ -11,12 +11,30 @@
     <link rel="stylesheet" href="src/ol/ol-ext.css" />
     <script src="src/ol/ol-ext.min.js"></script>
 
+    <!-- Dropbox -->
+    <script src="/dropbox/Dropbox-sdk.min.js"></script>
+    <script src="/dropbox/utils.js"></script>  <!-- od dropbox -->
+    <script type="text/javascript" src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="2h95rnvy2dubcsw"></script>
+
     <!-- My files -->
     <link rel="stylesheet" href="styles.css" type="text/css">
     
 </head>
 <body>
+    <section class="container main">
+           
+        <div id="pre-auth-section" style="display:none;">
+            
+            <button id="dropbox-button" style="display: block;">OneDrive</button>
+
+        </div>
+
+        <div id="authed-section" style="display:none;">
+            <ul id="files"></ul>
+        </div>
+    </section>
     <main>
+
         <div id="map"></div>
 
         <div id="button-container">
@@ -68,5 +86,6 @@
     <!-- My files -->
     <script src="map.js" type="module"></script> <!-- Need to be here, not in the head-->
     <script  src="/basemap.js" type="module"></script>
+    <script  src="/dropbox.js" type="module"></script>
 </body>
 </html>

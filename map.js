@@ -1,4 +1,5 @@
 import {getBasemaps} from "./basemap.js";
+import {loadFiles} from "./files.js";
 
 const infoContainer = document.getElementById("info-container");
 const buttonContainer = document.getElementById("button-container");
@@ -16,8 +17,23 @@ const map = new ol.Map({
         zoom: 6
     })
 });
+loadApp();
+async function loadApp(){
+    map.addLayer(getBasemaps(map));
+    console.log(await loadFiles("local"));
+}
 
-map.addLayer(getBasemaps(map));
+const data = "data/POIAll.geojson";
+
+map.addLayer(new ol.layer.Vector(
+    {	
+        name: "test data",
+        source: new ol.source.Vector({	
+            url: data,
+            format: new ol.format.GeoJSON()
+        }),
+        zIndex: 5,
+}));
 
 buttonContainer.addEventListener("change", (event) => {
 
