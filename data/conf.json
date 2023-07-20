@@ -1,0 +1,288 @@
+{
+    "layers":[
+		{
+            "name": "Car GPS",
+			"type": "line",
+			"fields":[{ 
+					"fieldName": "name",
+					"fieldType": "Charset",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "description",
+					"fieldType": "Charset",
+					"fieldDefault": "cos",
+					"fieldConstraints": ""
+				},
+				{
+					"fieldName": "trips",
+					"fieldType": "Charset"
+				}
+			],
+			"style":[]
+		
+        },
+		{
+            "name": "Hike GPS",
+			"type": "line",
+			"fields":[{ 
+					"fieldName": "name",
+					"fieldType": "Charset",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Duration",
+					"fieldType": "Number",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Length",
+					"fieldType": "Number",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				},				
+				{ 
+					"fieldName": "Elevation",
+					"fieldType": "Number",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Difficulty",
+					"fieldType": "Select",
+					"fieldSelect": "Easy, Medium, Hard",
+					"fieldDefault": "Easy",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Season",
+					"fieldType": "Select",
+					"fieldSelect": "Easy, Medium, Hard",
+					"fieldDefault": "Easy",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Stars",
+					"fieldType": "Select",
+					"fieldSelect": "1, 2, 3",
+					"fieldDefault": "2",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Category",
+					"fieldType": "Select",
+					"fieldSelect": "City, Nature",
+					"fieldDefault": "2",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Price",
+					"fieldType": "Number",
+					"fieldDefault": "0",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Link",
+					"fieldType": "Charset",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Description",
+					"fieldType": "Charset",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				},				
+				{
+					"fieldName": "trips",
+					"fieldType": "Charset"
+				}
+			]			
+        },
+        {
+            "name": "POI",
+			"type": "point",
+			"fields":[{ 
+					"fieldName": "Name",
+					"fieldType": "Charset",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				},		
+				{ 
+					"fieldName": "Duration",
+					"fieldType": "Number",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Season",
+					"fieldType": "Select",
+					"fieldSelect": "Easy, Medium, Hard",
+					"fieldDefault": "Easy",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Category",
+					"fieldType": "Select",
+					"fieldSelect": "viewpoint, wildlife, nature, sightseeing",
+					"fieldDefault": "2",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Price",
+					"fieldType": "Number",
+					"fieldDefault": "0",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Transport",
+					"fieldType": "Select",
+					"fieldSelect": "Car, Public",
+					"fieldDefault": "Easy",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Stars",
+					"fieldType": "Select",
+					"fieldSelect": "1,2,3",
+					"fieldDefault": "3",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Link",
+					"fieldType": "Charset",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "Description",
+					"fieldType": "Charset",
+					"fieldDefault": "cos",
+					"fieldConstraints": ""
+				},
+				{ 
+					"fieldName": "photoPath",
+					"fieldType": "Charset",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				},
+				{
+					"fieldName": "trips",
+					"fieldType": "Charset",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				}
+			]			
+        },
+
+		{
+            "name": "iNaturalist",
+			"type": "point",
+			"fields":[{ 
+				"fieldName": "name",
+				"fieldType": "Charset",
+				"fieldDefault": "",
+				"fieldConstraints": ""
+			},
+			{ 
+				"fieldName": "date",
+				"fieldType": "Date",
+				"fieldDefault": "",
+				"fieldConstraints": ""
+			},
+			{ 
+				"fieldName": "scientific_name",
+				"fieldType": "Charset",
+				"fieldDefault": "",
+				"fieldConstraints": ""
+			},
+			
+            { 
+				"fieldName": "iconic_taxon_name",
+				"fieldType": "Select",
+				"fieldDefault": "",
+				"fieldSelect": "Mammalia,Aves,Insecta,Animalia",
+				"fieldConstraints": ""
+			},
+            { 
+				"fieldName": "user_name",
+				"fieldType": "Charset",
+				"fieldDefault": "",
+				"fieldConstraints": ""
+			},
+			{ 
+				"fieldName": "created_at",
+				"fieldType": "Date",
+				"fieldDefault": "",
+				"fieldConstraints": ""
+			},
+            { 
+				"fieldName": "url",
+				"fieldType": "Charset",
+				"fieldDefault": "",
+				"fieldConstraints": ""
+			},
+			{ 
+				"fieldName": "img",
+				"fieldType": "Charset",
+				"fieldDefault": "",
+				"fieldConstraints": ""
+			},
+			{
+				"fieldName": "trips",
+				"fieldType": "Charset"
+			}
+        ]
+        }
+    ],
+	"trips":[
+		{
+			"name": "Alesund Exchange",
+			"type": "archived",
+			"description": "Places I've visited in spring during my student exchange",
+			"comment": "",
+			"startDate": "2022-03-21",
+			"endDate": "2022-06-22",
+			"stat": []
+		},
+		{
+			"name": "My observations",
+			"type": "archived",
+			"description": "Animals and plants I've observed in nature during last two years. Data is downloaded from iNaturalist platform where I share them with others.",
+			"comment": "",
+			"startDate": "2020-08-08",
+			"endDate": "2022-10-10",
+			"stat":{
+				"alesund": {
+					"price": ["min", "max"]
+				}
+			}
+		},
+		{
+			"name": "Switzerland's mammals",
+			"type": "archived",
+			"description": "All mammals that were observed in Switzerland during last summer and uploaded to iNaturalist platform. ",
+			"comment": "",
+			"startDate": "2022-06-01",
+			"endDate": "2022-08-01",
+			"stat":[]
+		}
+	],
+	"filters":[
+		{
+			"filterName":"testFilter",
+			"alesund": {
+				"name": "Atlantic Centre",
+				"price": "10"
+			},
+			"roadtrip":{
+				"name": "Alesund"
+			}
+
+		}
+	]
+}
+
