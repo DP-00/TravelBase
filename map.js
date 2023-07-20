@@ -1,5 +1,10 @@
 import {getBasemaps} from "./basemap.js";
+import {loadDropbox} from "./files.js";
+import {loadDropboxToken} from "./files.js";
 import {loadFiles} from "./files.js";
+import {listLayers} from "./files.js";
+
+
 
 const infoContainer = document.getElementById("info-container");
 const buttonContainer = document.getElementById("button-container");
@@ -17,23 +22,33 @@ const map = new ol.Map({
         zoom: 6
     })
 });
+
+
 loadApp();
 async function loadApp(){
+    let dropboxToken = await loadDropboxToken();
+    // let dropbox = await loadDropbox();
+    const local = "";
+    console.log(dropboxToken);
+    const dataSource = dropboxToken; // "" - local | await loadDropboxToken() | await loadDropbox()
+    console.log(dataSource);
     map.addLayer(getBasemaps(map));
-    console.log(await loadFiles("local"));
+    const config = await loadFiles(dataSource); // if empty, then local files
+    console.log(config);
+    console.log(await listLayers(map, config.layers, dataSource));
 }
 
 const data = "data/POIAll.geojson";
 
-map.addLayer(new ol.layer.Vector(
-    {	
-        name: "test data",
-        source: new ol.source.Vector({	
-            url: data,
-            format: new ol.format.GeoJSON()
-        }),
-        zIndex: 5,
-}));
+// map.addLayer(new ol.layer.Vector(
+//     {	
+//         name: "test data",
+//         source: new ol.source.Vector({	
+//             url: data,
+//             format: new ol.format.GeoJSON()
+//         }),
+//         zIndex: 5,
+// }));
 
 buttonContainer.addEventListener("change", (event) => {
 
