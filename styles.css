@@ -152,3 +152,61 @@ button:hover, input[type="submit"]:hover, #button-container input[type="radio"]:
     box-shadow: none;
 }
 
+/* POP-UP */
+
+.ol-popup {
+    color: var(--font);
+    background-color: var(--background);
+    border-radius: 1rem;
+    box-shadow: inset 0px 1px 20px 9px #050e06;
+    padding: 2rem 2rem 4rem 2rem;
+}
+
+.ol-popup-content {
+    min-width: 300px;
+    max-width: 30rem;
+    max-height: none;
+    overflow-wrap: break-word;
+}
+
+.ol-popup:before {
+    border-top-color: #050e06;
+    border-width: 18px;
+    left: 38px;
+}
+
+.ol-popup:after{
+    display: none;
+}
+
+.ol-popup-closer{
+    color: var(--font);
+    top: 12px;
+    right: 12px;
+}
+
+.ol-popup h2{
+    padding-bottom: 1rem;
+}
+
+.ol-popup p{
+    font-size: 0.9rem;
+    padding-bottom: 0.5rem;
+}
+
+.ol-popup img{
+    position: relative;
+    margin: auto;
+    border-radius: 5px;
+    width: 26rem;
+    max-height: 25rem;
+}
+
+.img-pop-up{
+    box-shadow: inset 0px 1px 20px 9px #050e06;
+    z-index: 2;
+}
+
+.ol-imageline > div{
+    height: 8em;
+}

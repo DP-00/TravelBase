@@ -26,11 +26,11 @@ const map = new ol.Map({
 
 loadApp();
 async function loadApp(){
-    let dropboxToken = await loadDropboxToken();
+    // let dropboxToken = await loadDropboxToken();
     // let dropbox = await loadDropbox();
     const local = "";
-    console.log(dropboxToken);
-    const dataSource = dropboxToken; // "" - local | await loadDropboxToken() | await loadDropbox()
+    
+    const dataSource = local; // "" - local | await loadDropboxToken() | await loadDropbox()
     console.log(dataSource);
     map.addLayer(getBasemaps(map));
     const config = await loadFiles(dataSource); // if empty, then local files
@@ -67,3 +67,29 @@ buttonContainer.addEventListener("change", (event) => {
     }   
 });
 
+// POP-UP
+
+let popup = new ol.Overlay.Popup();
+map.addOverlay(popup);
+
+map.on('click', function(evt) {
+
+    const feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
+        return feature;
+    });
+
+    if(feature){
+
+        let popContent='';
+        Object.keys(feature.getProperties()).forEach(key => {
+
+            if(key != "geometry" & key != "name" & key != "img" & key != "trips"){
+                popContent += '<p><b>' + key +'</b>:  '+feature.get(key)+ '</p>';
+            }         
+        });
+
+        const prettyCoord = ol.coordinate.toStringHDMS(ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326'), 2);
+        let popupContent = `<div><h2>${feature.get("name")}</h2>${popContent}<p><i>${prettyCoord}</i></p><img src=${feature.get("img")} alt=""></div>`
+        popup.show(evt.coordinate, popupContent);
+    }
+});
