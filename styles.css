@@ -210,3 +210,22 @@ button:hover, input[type="submit"]:hover, #button-container input[type="radio"]:
 .ol-imageline > div{
     height: 8em;
 }
+
+/* OL CONTROLS */
+.ol-control button{
+    background-color: var(--background);
+}
+
+.ol-search .autocomplete, .ol-search .history{
+    background-color: var(--background);
+}
+
+.photon {
+    left:6em;
+}
+
+.ol-control.ol-bookmark{
+    left: 0.5rem;
+    top: 4.5rem;
+    background-color: var(--background);
+}
