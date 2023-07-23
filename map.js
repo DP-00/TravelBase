@@ -48,15 +48,33 @@ async function loadApp(){
 
             let popContent='';
             Object.keys(feature.getProperties()).forEach(key => {
-
                 if(key != "geometry" & key != "name" & key != "img" & key != "trips"){
                     popContent += '<p><b>' + key +'</b>:  '+feature.get(key)+ '</p>';
                 }         
             });
 
+            let profile = (feature.getGeometry() instanceof ol.geom.LineString)?"<button id='showProfile' class='profile-button'><img src='icons/panel.png'></button>":"";
+
             const prettyCoord = ol.coordinate.toStringHDMS(ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326'), 2);
-            let popupContent = `<div><h2>${feature.get("name")}</h2>${popContent}<p><i>${prettyCoord}</i></p><img src=${feature.get("img")} alt=""></div>`
+            let popupContent = `<div><h2>${feature.get("name")}</h2>${popContent}<p><i>${prettyCoord}</i></p><img src=${feature.get("img")} alt="">${profile}</div>`;
             popup.show(evt.coordinate, popupContent);
+
+            if(feature.getGeometry() instanceof ol.geom.LineString){
+                document.getElementById('showProfile').onclick = function() {
+
+                    let isProfile = 0;
+                    map.getControls().forEach(function(control) {
+                        if (control instanceof ol.control.Profil) {
+                            // map.removeControl(control);
+                            deleteProfile(layerList);
+                            isProfile = 1;
+                        }
+                    }, this);
+
+                    if(!isProfile){ createProfile(feature);}        
+               }
+            }
+
         }
     });
 
@@ -113,6 +131,105 @@ async function loadApp(){
         map.getView().animate({ center:p, zoom: Math.max (map.getView().getZoom(), 12)  });
     });
 }
+
+function deleteProfile(layerList){
+    map.getControls().forEach(function(control) {
+        if (control instanceof ol.control.Profil) {
+            map.removeControl(control);
+        }
+    }, this);
+
+    for (var j = 0; j<layerList.length; j++){               
+        if (layerList[j].get("name") == "profile-temp") {						  
+            map.removeLayer(layerList[j]);
+        }
+    }
+}
+
+function createProfile(feature){
+
+    var profil = new ol.control.Profil({
+        width: 600,
+        height: 300,
+    });
+    profil.toggle();
+    map.addControl(profil);
+
+    var source = new ol.source.Vector({});
+    var vector = new ol.layer.Vector({
+        source: source,
+        name: "profile-temp",
+    });
+    map.addLayer(vector);
+
+    var pt;            
+
+    profil.setGeometry(feature);
+        pt = new ol.Feature(new ol.geom.Point([0,0]));
+        pt.setStyle([]);
+        source.addFeature(pt);
+
+    const iconStyle = new ol.style.Style({
+        image: new ol.style.Icon({
+            anchor: [0.5, 60],
+            anchorXUnits: 'fraction',
+            anchorYUnits: 'pixels',
+            src: 'icons/hiker.png',
+        }),
+    });
+
+    // Draw a point on the map when mouse fly over profil
+    function drawPoint(e) {
+        if (!pt) return;
+        if (e.type=="over"){
+            pt.setGeometry(new ol.geom.Point(e.coord));
+            pt.setStyle(iconStyle);
+        } else {
+            pt.setStyle([]);
+        }
+    };
+
+    // Show a popup on over
+    profil.on(["over","out"], function(e) {
+        if (e.type=="over") profil.popup(e.coord[2]+" m");
+        drawPoint(e);
+    });
+
+    // Show on map over
+    var hover = new ol.interaction.Hover({ cursor: "pointer", hitTolerance:10 });
+    map.addInteraction(hover);
+    const profileButton = document.querySelector(".ol-profil").querySelector("button")
+
+    profileButton.addEventListener("click", () => {
+
+        if(profil.isShown())
+        {
+            console.log("shown");
+            map.addInteraction(hover);
+        }else{
+            console.log("hidden");
+            map.removeInteraction(hover);
+        }
+
+    });
+
+    hover.on("hover", function(e) {
+        // Point on the line
+        var c = feature.getGeometry().getClosestPoint(e.coordinate)
+        drawPoint({ type: "over", coord: c });
+        // Show profil
+        var p = profil.showAt(e.coordinate);
+        profil.popup(p[2]+" m");
+    
+    });
+    hover.on("leave", function(e) {
+        profil.popup();
+        profil.showAt();    
+        drawPoint({});
+    });
+}
+
+
 
 
 

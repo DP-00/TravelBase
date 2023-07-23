@@ -194,7 +194,7 @@ button:hover, input[type="submit"]:hover, #button-container input[type="radio"]:
     padding-bottom: 0.5rem;
 }
 
-.ol-popup img{
+.ol-popup>img{
     position: relative;
     margin: auto;
     border-radius: 5px;
@@ -229,3 +229,8 @@ button:hover, input[type="submit"]:hover, #button-container input[type="radio"]:
     top: 4.5rem;
     background-color: var(--background);
 }
+
+.ol-profil {
+    color:#050e06;
+}
+
