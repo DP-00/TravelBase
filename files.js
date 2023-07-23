@@ -121,7 +121,7 @@ export async function listLayers(map, layers, dataSource){
 		});
 
 		map.addLayer(new ol.layer.Vector(
-			{	name: layers[0]["name"],
+			{	name: layers[i]["name"],
 				source: source,
 				zIndex: 5,
 			}
