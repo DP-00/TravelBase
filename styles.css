@@ -152,6 +152,26 @@ button:hover, input[type="submit"]:hover, #button-container input[type="radio"]:
     box-shadow: none;
 }
 
+/* LAYERS */
+
+.layerDiv {
+    box-shadow: inset 0px 0px 9px 3px #000000;
+    padding: 0.4rem 1rem;
+    border-radius: 5px;
+    background-color: #071a16;
+    display: flex;
+    /* justify-content: flex-end; */
+    align-items: center;
+    margin: 1rem 0;
+}
+
+.layerDiv label{
+    width: 16rem;
+    padding: 0.9rem;
+}
+
+
+
 /* POP-UP */
 
 .ol-popup {

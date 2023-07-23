@@ -3,6 +3,7 @@ import {loadDropbox} from "./files.js";
 import {loadDropboxToken} from "./files.js";
 import {loadFiles} from "./files.js";
 import {listLayers} from "./files.js";
+import {layerMenu} from "./layers.js";
 
 
 
@@ -32,6 +33,10 @@ async function loadApp(){
     await listLayers(map, config.layers, dataSource);
 
     let layerList = await map.getLayers().getArray();
+
+    layerMenu(map, layerList);
+
+
 
     // POP-UP
 
