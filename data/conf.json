@@ -1,7 +1,7 @@
 {
     "layers":[
 		{
-            "name": "Car GPS",
+            "name": "Transport",
 			"type": "line",
 			"fields":[{ 
 					"fieldName": "name",
@@ -21,13 +21,12 @@
 				}
 			],
 			"style":[]
-		
         },
 		{
-            "name": "Hike GPS",
+            "name": "Hike",
 			"type": "line",
 			"fields":[{ 
-					"fieldName": "name",
+					"fieldName": "Name",
 					"fieldType": "Charset",
 					"fieldDefault": "",
 					"fieldConstraints": ""
@@ -51,10 +50,16 @@
 					"fieldConstraints": ""
 				},
 				{ 
+					"fieldName": "Weather",
+					"fieldType": "Select",
+					"fieldDefault": "All, OK, Excellant",
+					"fieldConstraints": ""
+				},
+				{ 
 					"fieldName": "Difficulty",
 					"fieldType": "Select",
 					"fieldSelect": "Easy, Medium, Hard",
-					"fieldDefault": "Easy",
+					"fieldDefault": "Medium",
 					"fieldConstraints": ""
 				},
 				{ 
@@ -120,8 +125,8 @@
 				{ 
 					"fieldName": "Season",
 					"fieldType": "Select",
-					"fieldSelect": "Easy, Medium, Hard",
-					"fieldDefault": "Easy",
+					"fieldSelect": "Spring, Summer, Autumn, Winter",
+					"fieldDefault": "Spring, Summer, Autumn, Winter",
 					"fieldConstraints": ""
 				},
 				{ 
@@ -164,6 +169,12 @@
 					"fieldConstraints": ""
 				},
 				{ 
+					"fieldName": "Weather",
+					"fieldType": "Select",
+					"fieldDefault": "All, OK, Excellant",
+					"fieldConstraints": ""
+				},
+				{ 
 					"fieldName": "photoPath",
 					"fieldType": "Charset",
 					"fieldDefault": "",
@@ -176,66 +187,6 @@
 					"fieldConstraints": ""
 				}
 			]			
-        },
-
-		{
-            "name": "iNaturalist",
-			"type": "point",
-			"fields":[{ 
-				"fieldName": "name",
-				"fieldType": "Charset",
-				"fieldDefault": "",
-				"fieldConstraints": ""
-			},
-			{ 
-				"fieldName": "date",
-				"fieldType": "Date",
-				"fieldDefault": "",
-				"fieldConstraints": ""
-			},
-			{ 
-				"fieldName": "scientific_name",
-				"fieldType": "Charset",
-				"fieldDefault": "",
-				"fieldConstraints": ""
-			},
-			
-            { 
-				"fieldName": "iconic_taxon_name",
-				"fieldType": "Select",
-				"fieldDefault": "",
-				"fieldSelect": "Mammalia,Aves,Insecta,Animalia",
-				"fieldConstraints": ""
-			},
-            { 
-				"fieldName": "user_name",
-				"fieldType": "Charset",
-				"fieldDefault": "",
-				"fieldConstraints": ""
-			},
-			{ 
-				"fieldName": "created_at",
-				"fieldType": "Date",
-				"fieldDefault": "",
-				"fieldConstraints": ""
-			},
-            { 
-				"fieldName": "url",
-				"fieldType": "Charset",
-				"fieldDefault": "",
-				"fieldConstraints": ""
-			},
-			{ 
-				"fieldName": "img",
-				"fieldType": "Charset",
-				"fieldDefault": "",
-				"fieldConstraints": ""
-			},
-			{
-				"fieldName": "trips",
-				"fieldType": "Charset"
-			}
-        ]
         }
     ],
 	"trips":[
