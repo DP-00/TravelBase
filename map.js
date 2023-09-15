@@ -4,6 +4,7 @@ import {loadDropboxToken} from "./files.js";
 import {loadFiles} from "./files.js";
 import {listLayers} from "./files.js";
 import {layerMenu} from "./layers.js";
+import {addData} from "./add.js";
 
 
 
@@ -35,6 +36,9 @@ async function loadApp(){
     let layerList = await map.getLayers().getArray();
 
     layerMenu(map, layerList);
+    addData(map, config, layerList);
+
+
 
 
 
@@ -61,7 +65,12 @@ async function loadApp(){
             let profile = (feature.getGeometry() instanceof ol.geom.LineString)?"<button id='showProfile' class='profile-button'><img src='icons/panel.png'></button>":"";
 
             const prettyCoord = ol.coordinate.toStringHDMS(ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326'), 2);
-            let popupContent = `<div><h2>${feature.get("name")}</h2>${popContent}<p><i>${prettyCoord}</i></p><img src=${feature.get("img")} alt="">${profile}</div>`;
+			const coord = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326');
+
+			const googleMap = `http://www.google.com/maps/place/${coord[1]},${coord[0]}`;
+
+            let popupContent = `<div><h2>${feature.get("Name")}</h2>${popContent}<p><a href=${googleMap}>${ol.coordinate.toStringHDMS(coord, 2)}</a>
+            </p><img src=${feature.get("img")} alt="">${profile}</div>`;
             popup.show(evt.coordinate, popupContent);
 
             if(feature.getGeometry() instanceof ol.geom.LineString){

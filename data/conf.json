@@ -4,7 +4,7 @@
             "name": "Transport",
 			"type": "line",
 			"fields":[{ 
-					"fieldName": "name",
+					"fieldName": "Name",
 					"fieldType": "Charset",
 					"fieldDefault": "",
 					"fieldConstraints": ""
@@ -176,6 +176,12 @@
 				},
 				{ 
 					"fieldName": "photoPath",
+					"fieldType": "Charset",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				},
+				{
+					"fieldName": "google",
 					"fieldType": "Charset",
 					"fieldDefault": "",
 					"fieldConstraints": ""
