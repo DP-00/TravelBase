@@ -60,6 +60,27 @@ export function layerMenu(map, layerList){
                 map.getView().fit(layer.getSource().getExtent());
             };
 
+            const downloadElem = document.createElement("button");
+            layerDiv.appendChild(downloadElem);
+            const downloadElemImg = document.createElement("img");
+            downloadElemImg.src = "icons/download.png";
+            downloadElem.appendChild(downloadElemImg);
+            downloadElem.onclick = function () {
+
+                var writer = new ol.format.GeoJSON();
+                var geoJsonStr = writer.writeFeatures(layer.getSource().getFeatures(), {
+                    dataProjection: 'EPSG:4326',
+                    featureProjection: 'EPSG:3857'
+                });
+
+                var element = document.createElement('a');
+                element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(geoJsonStr));
+                element.setAttribute('download', 'data.geojson');        
+                element.style.display = 'none';
+                document.body.appendChild(element);             
+                element.click();          
+                document.body.removeChild(element);
+            };
         }      
     });
 }

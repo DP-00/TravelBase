@@ -4,7 +4,7 @@
             "name": "Transport",
 			"type": "line",
 			"fields":[{ 
-					"fieldName": "Name",
+					"fieldName": "name",
 					"fieldType": "Charset",
 					"fieldDefault": "",
 					"fieldConstraints": ""
@@ -26,7 +26,7 @@
             "name": "Hike",
 			"type": "line",
 			"fields":[{ 
-					"fieldName": "Name",
+					"fieldName": "name",
 					"fieldType": "Charset",
 					"fieldDefault": "",
 					"fieldConstraints": ""
@@ -111,7 +111,7 @@
             "name": "POI",
 			"type": "point",
 			"fields":[{ 
-					"fieldName": "Name",
+					"fieldName": "name",
 					"fieldType": "Charset",
 					"fieldDefault": "",
 					"fieldConstraints": ""
@@ -171,17 +171,12 @@
 				{ 
 					"fieldName": "Weather",
 					"fieldType": "Select",
-					"fieldDefault": "All, OK, Excellant",
+					"fieldDefault": "OK",
+					"fieldSelect": "All, OK, Excellant",
 					"fieldConstraints": ""
 				},
 				{ 
 					"fieldName": "photoPath",
-					"fieldType": "Charset",
-					"fieldDefault": "",
-					"fieldConstraints": ""
-				},
-				{
-					"fieldName": "google",
 					"fieldType": "Charset",
 					"fieldDefault": "",
 					"fieldConstraints": ""

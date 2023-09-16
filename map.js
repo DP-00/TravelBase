@@ -4,18 +4,18 @@ import {loadDropboxToken} from "./files.js";
 import {loadFiles} from "./files.js";
 import {listLayers} from "./files.js";
 import {layerMenu} from "./layers.js";
-import {addData} from "./add.js";
+import {addData, listPropertiesByLayer} from "./add.js";
 
 
 
 const infoContainer = document.getElementById("info-container");
 const buttonContainer = document.getElementById("button-container");
-
 const map = new ol.Map({
     target: 'map',
     view: new ol.View({
         center: ol.proj.fromLonLat([8, 47]),
-        zoom: 6
+        zoom: 6,
+
     })
 });
 
@@ -34,6 +34,7 @@ async function loadApp(){
     await listLayers(map, config.layers, dataSource);
 
     let layerList = await map.getLayers().getArray();
+    const specialLayers = ["Basemaps", "TripTemp",  "profile-temp"]
 
     layerMenu(map, layerList);
     addData(map, config, layerList);
@@ -54,24 +55,30 @@ async function loadApp(){
         });
 
         if(feature){
-
             let popContent='';
             Object.keys(feature.getProperties()).forEach(key => {
                 if(key != "geometry" & key != "name" & key != "img" & key != "trips"){
-                    popContent += '<p><b>' + key +'</b>:  '+feature.get(key)+ '</p>';
+                    if(feature.get(key)){
+                         popContent += '<p><b>' + key +'</b>:  '+feature.get(key)+ '</p>';
+                    }                  
                 }         
             });
 
             let profile = (feature.getGeometry() instanceof ol.geom.LineString)?"<button id='showProfile' class='profile-button'><img src='icons/panel.png'></button>":"";
 
-            const prettyCoord = ol.coordinate.toStringHDMS(ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326'), 2);
 			const coord = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326');
 
 			const googleMap = `http://www.google.com/maps/place/${coord[1]},${coord[0]}`;
 
-            let popupContent = `<div><h2>${feature.get("Name")}</h2>${popContent}<p><a href=${googleMap}>${ol.coordinate.toStringHDMS(coord, 2)}</a>
-            </p><img src=${feature.get("img")} alt="">${profile}</div>`;
+            let popupContent = `<div><h2>${feature.get("name")}</h2>${popContent}<p><a href=${googleMap}>${ol.coordinate.toStringHDMS(coord, 2)}</a>
+            </p><img src=${feature.get("img")} alt="">${profile}			
+            <button id='popEdit' class='edit-button'><img src='icons/pencil.png'></button>
+			<button id='popDelete' class='delete-button'><img src='icons/delete.png'></button>
+            </div>`;
             popup.show(evt.coordinate, popupContent);
+
+            document.getElementById('popEdit').onclick = function(){editPopup(feature, evt)};
+            document.getElementById('popDelete').onclick = function(){deletePopup(feature)};
 
             if(feature.getGeometry() instanceof ol.geom.LineString){
                 document.getElementById('showProfile').onclick = function() {
@@ -91,6 +98,118 @@ async function loadApp(){
 
         }
     });
+
+    function editPopup(feature, evt){
+
+        let content='';
+     
+        layerList.forEach(function(layer) {
+            if (!specialLayers.includes(layer.get("name"))) {
+                let source = layer.getSource();
+                if(source.hasFeature(feature)){  
+                    console.log(layer)
+                    const layerKeys = listPropertiesByLayer(layer.get("name"), config);
+
+                    for (const [key, value] of layerKeys) {
+
+                        let featureValue = feature.get(key)!= undefined ? feature.get(key) : "";
+
+                        console.log(value)
+                        switch(value){
+                            case "Charset":
+                                content+='<p><b>' +key+'</b>:  '+'<input value="'+featureValue+'">'+'</p>';
+                                break;
+                            case "Number":
+                                content+='<p><b>' +key+'</b>:  '+'<input type="number" value="'+featureValue+'">'+'</p>';
+                                break;
+                            case "Select":
+                                let options="";
+                                for(var i=0; i<config["layers"].length; i++){
+                                    if(layer.get("name") === config["layers"][i]["name"]){
+                                        for(var j=0; j<config["layers"][i]["fields"].length; j++)
+                                        {   
+                                            console.log(config["layers"][i]["fields"][j]["fieldName"], key)
+                                            if(config["layers"][i]["fields"][j]["fieldName"] === key){
+                                                if(config["layers"][i]["fields"][j]["fieldSelect"]){
+                                                    let selectArray = config["layers"][i]["fields"][j]["fieldSelect"].split(",");
+                                                    for(let l=0; l<selectArray.length; l++){
+                                                        options+=`<option value=${selectArray[l]}>${selectArray[l]}</option>`
+                                                    }
+                                                }
+                                            }         
+                                        }                          
+                                    }
+                                }
+
+                                content+=`<b>${key}</b>:<select multiple>${options}</select> `
+
+                                break;
+                        }
+                    }
+
+                    let popupContent = `<form  class="trip-form" id="new-trip-form">
+                    <div><h2>${feature.get("name")}</h2>${content}			
+                    <button id='popSave' class='edit-button'><img src='icons/checked.png'></button>
+                    </div>
+                    </form>`;
+            
+                    popup.show(evt.coordinate, popupContent);				
+                    
+                    const editForm = document.getElementById("new-trip-form").elements;
+            
+                    document.getElementById('popSave').onclick = function(event) {
+                        event.preventDefault();
+
+                        let i = 0;
+                        for (const [key, value] of layerKeys) {
+
+                            console.log(editForm[i].selectedOptions)
+                            if(editForm[i].selectedOptions){
+                                let options = '';                               
+
+                                for(let option in editForm[i].selectedOptions){
+                                    console.log(editForm[i].selectedOptions[option].value);
+
+                                    if(editForm[i].selectedOptions[option].value!=undefined){
+                                        options += editForm[i].selectedOptions[option].value + ", ";
+                                    }
+                                }
+                                options = options.substring(0, options.length-2);
+                                console.log(options);
+                                feature.set(key, options); 
+
+                            }else{
+                                feature.set(key, editForm[i].value);     
+                            }
+                 
+                            i++;	
+                        }
+                        popup.hide();
+                    }
+                }
+            }
+        })
+
+        
+				
+    }
+
+    function deletePopup(feature) {
+
+        layerList.forEach(function(layer) {
+            console.log(layer)
+            if (!specialLayers.includes(layer.get("name"))) {
+                let source = layer.getSource();
+
+                if(source.hasFeature(feature)){                   
+                    source.removeFeature(feature);
+                    popup.hide();
+                }
+            }
+        })
+
+        // dodatkowo usunac z json file
+    }
 
 
     // MAP WIDGETS
@@ -244,9 +363,6 @@ function createProfile(feature){
 }
 
 
-
-
-
 buttonContainer.addEventListener("change", (event) => {
 
     let content = document.getElementById( event.target.value + "-container");
@@ -263,5 +379,4 @@ buttonContainer.addEventListener("change", (event) => {
         content.style.display='block';
     }   
 });
-
 
