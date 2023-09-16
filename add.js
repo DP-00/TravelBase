@@ -49,6 +49,32 @@ export function addData(map, config, layerList){
 		})
 	}
 
+	document.getElementById("new-data-gpx").onchange = function() {
+		newInputs.innerHTML=null;
+
+		layerList.forEach(function(layer) {
+			if (layer.get('name') === selectAdd.value) {
+				const GPXElem = document.createElement("input");
+				GPXElem.type="file";
+				GPXElem.accept=".gpx";		
+				newInputs.appendChild(GPXElem);
+				GPXElem.addEventListener("change", () => {
+					const fileFormat = new ol.format.GPX();
+					const reader = new FileReader();
+					reader.readAsText(GPXElem.files[0], "UTF-8");
+					reader.onload = function (evt) {
+						const fileFeatures = fileFormat.readFeatures(evt.target.result,{
+							dataProjection:'EPSG:4326',
+							featureProjection:'EPSG:3857'
+						});
+
+						createForm(map, fileFeatures, config, layer);
+					}	
+				  });
+			}
+		})
+	}
+
 }
 
 function listPropertiesByFeatures(features){
