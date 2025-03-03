@@ -84,6 +84,12 @@
 					"fieldConstraints": ""
 				},
 				{ 
+					"fieldName": "Transport",
+					"fieldType": "Charset",
+					"fieldDefault": "",
+					"fieldConstraints": ""
+				},
+				{ 
 					"fieldName": "Price",
 					"fieldType": "Number",
 					"fieldDefault": "0",
@@ -144,9 +150,8 @@
 				},
 				{ 
 					"fieldName": "Transport",
-					"fieldType": "Select",
-					"fieldSelect": "Car, Public",
-					"fieldDefault": "Easy",
+					"fieldType": "Charset",
+					"fieldDefault": "",
 					"fieldConstraints": ""
 				},
 				{ 

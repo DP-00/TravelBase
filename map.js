@@ -68,9 +68,11 @@ async function loadApp(){
 
 			const coord = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326');
 
-			const googleMap = `http://www.google.com/maps/place/${coord[1]},${coord[0]}`;
+			// const googleMap = `http://www.google.com/maps/place/${coord[1]},${coord[0]}`;
+			const googleMap = `https://www.google.com/maps/dir/?api=1&destination=${coord[1]}%2C${coord[0]}&travelmode=transit`;
 
-            let popupContent = `<div><h2>${feature.get("name")}</h2>${popContent}<p><a href=${googleMap}>${ol.coordinate.toStringHDMS(coord, 2)}</a>
+
+            let popupContent = `<div><h2>${feature.get("name")}</h2>${popContent}<p><a  target="_blank" href=${googleMap}>${ol.coordinate.toStringHDMS(coord, 2)}</a>
             </p><img src=${feature.get("img")} alt="">${profile}			
             <button id='popEdit' class='edit-button'><img src='icons/pencil.png'></button>
 			<button id='popDelete' class='delete-button'><img src='icons/delete.png'></button>

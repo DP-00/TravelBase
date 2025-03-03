@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeoJSON Editor (GitHub Hosted)</title>
+    <script src="https://cdn.jsdelivr.net/npm/ol@7.2.2/dist/ol.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@7.2.2/ol.css" />
+    <style>
+      #map {
+        width: 100%;
+        height: 500px;
+      }
+      #controls {
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="controls">
+      <button id="loadFile">Load GeoJSON</button>
+      <button id="saveFile" style="display: none">Download Changes</button>
+      <input type="text" id="pointName" placeholder="Enter place name" style="display: none" />
+      <button id="addPoint" style="display: none">Add Point</button>
+      <div id="status"></div>
+    </div>
+    <div id="map"></div>
+
+    <script>
+      const GITHUB_RAW_URL = "https://raw.githubusercontent.com/DP-00/Geoinf/main/test.geojson";
+
+      let vectorSource = new ol.source.Vector();
+      let vectorLayer = new ol.layer.Vector({ source: vectorSource });
+
+      // Initialize OpenLayers Map
+      const map = new ol.Map({
+        target: "map",
+        layers: [new ol.layer.Tile({ source: new ol.source.OSM() }), vectorLayer],
+        view: new ol.View({
+          center: ol.proj.fromLonLat([2.2945, 48.8584]), // Default center: Eiffel Tower
+          zoom: 3,
+        }),
+      });
+
+      // Load GeoJSON from GitHub
+      async function loadGeoJSON() {
+        try {
+          const response = await fetch(GITHUB_RAW_URL);
+          if (!response.ok) throw new Error("Failed to load GeoJSON");
+          const geojsonData = await response.json();
+
+          vectorSource.clear();
+          const features = new ol.format.GeoJSON().readFeatures(geojsonData, {
+            featureProjection: "EPSG:3857",
+          });
+          vectorSource.addFeatures(features);
+
+          document.getElementById("status").innerText = "GeoJSON Loaded!";
+          console.log("Loaded GeoJSON:", geojsonData);
+
+          // Show editing tools
+          document.getElementById("loadFile").style.display = "none";
+          document.getElementById("saveFile").style.display = "inline-block";
+          document.getElementById("pointName").style.display = "inline-block";
+          document.getElementById("addPoint").style.display = "inline-block";
+        } catch (err) {
+          console.error("Error loading GeoJSON:", err);
+        }
+      }
+
+      // Add New Point
+      document.getElementById("addPoint").addEventListener("click", () => {
+        const pointName = document.getElementById("pointName").value.trim();
+        if (!pointName) {
+          alert("Please enter a name for the place!");
+          return;
+        }
+
+        map.once("click", (event) => {
+          const coordinates = ol.proj.toLonLat(event.coordinate);
+          const newFeature = new ol.Feature({
+            geometry: new ol.geom.Point(event.coordinate),
+            name: pointName,
+          });
+
+          newFeature.setProperties({ name: pointName });
+          vectorSource.addFeature(newFeature);
+
+          document.getElementById("status").innerText = `Added: ${pointName}`;
+          console.log("New point added:", pointName, coordinates);
+        });
+
+        document.getElementById("status").innerText = "Click on the map to place the point";
+      });
+
+      // Save GeoJSON - User downloads the updated file
+      function saveGeoJSON() {
+        const geojson = new ol.format.GeoJSON().writeFeatures(vectorSource.getFeatures(), {
+          featureProjection: "EPSG:3857",
+        });
+
+        const blob = new Blob([geojson], { type: "application/geo+json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+
+        a.href = url;
+        a.download = "updated-places.geojson";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        document.getElementById("status").innerText = "Changes downloaded. Upload manually to GitHub!";
+        console.log("GeoJSON downloaded.");
+      }
+
+      // Attach event listeners
+      document.getElementById("loadFile").addEventListener("click", loadGeoJSON);
+      document.getElementById("saveFile").addEventListener("click", saveGeoJSON);
+
+      // Auto-load GeoJSON on page load
+      window.onload = loadGeoJSON;
+    </script>
+  </body>
+</html>
