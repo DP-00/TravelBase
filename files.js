@@ -1,80 +1,18 @@
 const dataPath = "data/";
-let layerList;
-let dropboxButton = document.getElementById("dropbox-button");
-var data;
 
-// DROPBOX FUNCTIONS
-// const REDIRECT_URI = 'http://localhost:8000/';
-// const dbxAuth = new Dropbox.DropboxAuth({
-// 	clientId: '2h95rnvy2dubcsw',
-// });
-
-// function getCodeFromUrl() {
-// 	return utils.parseQueryString(window.location.search).code;
-// }
-
-// function hasRedirectedFromAuth() {
-// 	return !!getCodeFromUrl();
-// }
-
-// function showPageSection(elementId) {
-// 	document.getElementById(elementId).style.display = 'block';
-// }
-
-// function doAuth() {
-// 	dbxAuth.getAuthenticationUrl(REDIRECT_URI, undefined, 'code', 'offline', undefined, undefined, true)
-// 		.then(authUrl => {
-// 			window.sessionStorage.clear();
-// 			window.sessionStorage.setItem("codeVerifier", dbxAuth.codeVerifier);
-// 			window.location.href = authUrl;
-// 		})
-// 		.catch((error) => console.error(error));
-// };
-
-// export async function loadDropbox(){
-// 	dropboxButton.addEventListener("click", function(){doAuth()})
-// 	let dbx;
-// 	if (hasRedirectedFromAuth()) {
-// 		showPageSection('authed-section');
-// 		dbxAuth.setCodeVerifier(window.sessionStorage.getItem('codeVerifier'));
-// 		data = await dbxAuth.getAccessTokenFromCode(REDIRECT_URI, getCodeFromUrl())
-// 			.then((response) => {
-// 				dbxAuth.setAccessToken(response.result.access_token);
-// 				dbx = new Dropbox.Dropbox({
-// 					auth: dbxAuth
-// 				});
-// 				return dbx;
-// 			})
-// 			.catch((error) => {
-// 				console.error(error)
-// 			});
-// 	} else {
-// 		showPageSection('pre-auth-section');
-// 	}
-
-// 	return dbx;
-// }
-
-// export async function loadDropboxToken(){
-// 	let dbx = new Dropbox.Dropbox({ accessToken: ACCESS_TOKEN });
-// 	await dbx.usersGetCurrentAccount().then(function(response) {
-// 		console.log("user", response);
-// 	})
-// 	return dbx;
-// }
-
+// DATA LOADING
 // empty string = local files, otherwise dropbox object is passed
-export async function loadFiles(fileSource) {
-  if (!fileSource) {
-    let dataLocal = await fetchFile("data/conf.json");
-    return dataLocal;
-  } else {
-    let dataDropbox = await fetchDropboxFile(fileSource, "/conf.json");
-    return dataDropbox;
-  }
-}
+// export async function loadFiles(fileSource) {
+//   if (!fileSource) {
+//     let dataLocal = await fetchFile("data/conf.json");
+//     return dataLocal;
+//   } else {
+//     let dataDropbox = await fetchDropboxFile(fileSource, "/conf.json");
+//     return dataDropbox;
+//   }
+// }
 
-async function fetchFile(link) {
+export async function fetchFile(link) {
   let result = await fetch(link);
   // console.log(result);
   let layer = await result.json();
@@ -93,7 +31,6 @@ async function fetchDropboxLink(dbx, link) {
 async function fetchDropboxFile(dbx, link) {
   let dropboxLink = await fetchDropboxLink(dbx, link);
   let data = await fetchFile(dropboxLink);
-
   return data;
 }
 

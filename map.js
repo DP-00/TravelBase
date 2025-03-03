@@ -1,11 +1,12 @@
 import { getBasemaps } from "./basemap.js";
-import { loadFiles } from "./files.js";
+import { fetchFile } from "./files.js";
 import { listLayers } from "./files.js";
 import { layerMenu } from "./layers.js";
 // import {loadDropbox} from "./files.js";
 // import {loadDropboxToken} from "./files.js";
 // import { addData, listPropertiesByLayer } from "./add.js";
 
+const dropboxButton = document.getElementById("dropbox-button");
 const infoContainer = document.getElementById("info-container");
 const buttonContainer = document.getElementById("button-container");
 const specialLayers = ["Basemaps", "TripTemp", "profile-temp"];
@@ -17,18 +18,85 @@ const map = new ol.Map({
   }),
 });
 
-loadApp();
+// DROPBOX
+
+const REDIRECT_URI = window.location.origin; //"http://localhost:8000/";
+const CLIENT_ID = "2h95rnvy2dubcsw";
+let dbxAuth = new Dropbox.DropboxAuth({
+  clientId: CLIENT_ID,
+});
+var configLink = "";
+var dbx = "";
+
+window.onload = function () {
+  doAuth(); // Runs only once when the page loads
+};
+
+function getCodeFromUrl() {
+  return utils.parseQueryString(window.location.search).code;
+}
+
+function hasRedirectedFromAuth() {
+  return !!getCodeFromUrl();
+}
+
+function showPageSection(elementId) {
+  document.getElementById(elementId).style.display = "block";
+}
+
+function doAuth() {
+  if (new URLSearchParams(window.location.search).has("code")) {
+    console.log("Already authenticated, skipping...");
+    return;
+  }
+
+  dbxAuth
+    .getAuthenticationUrl(REDIRECT_URI, undefined, "code", "offline", undefined, undefined, true)
+    .then((authUrl) => {
+      window.sessionStorage.clear();
+      window.sessionStorage.setItem("codeVerifier", dbxAuth.codeVerifier);
+      window.location.href = authUrl;
+    })
+    .catch((error) => console.error(error));
+}
+window.doAuth = doAuth; // Expose to global scope
+
+if (hasRedirectedFromAuth()) {
+  showPageSection("authed-section");
+  dbxAuth.setCodeVerifier(window.sessionStorage.getItem("codeVerifier"));
+  dbxAuth
+    .getAccessTokenFromCode(REDIRECT_URI, getCodeFromUrl())
+    .then((response) => {
+      dbxAuth.setAccessToken(response.result.access_token);
+      var dropbox = new Dropbox.Dropbox({
+        auth: dbxAuth,
+      });
+
+      dbx = dropbox;
+
+      return dropbox.filesGetTemporaryLink({
+        path: "/conf.json",
+      });
+    })
+    .then((response) => {
+      configLink = response.result.link;
+      console.log(configLink);
+      loadApp();
+    })
+    .catch((error) => {
+      console.error(error);
+    });
+} else {
+  showPageSection("pre-auth-section");
+}
 
 async function loadApp() {
   // let dropboxToken = await loadDropboxToken();
   // let dropbox = await loadDropbox();
 
-  const dataSource = ""; // "" - local | await loadDropboxToken() | await loadDropbox()
-  // console.log(dataSource);
   map.addLayer(getBasemaps(map));
-  const config = await loadFiles(dataSource); // if empty, then local files
-  // console.log(config);
-  await listLayers(map, config.layers, dataSource);
+  const config = await fetchFile(configLink); // or "data/conf.json" for local files
+  await listLayers(map, config.layers, dbx);
   let layerList = await map.getLayers().getArray();
 
   layerMenu(map, layerList);
