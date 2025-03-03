@@ -1,6 +1,3 @@
-//  to git ignore
-const ACCESS_TOKEN =
-  "sl.BimHWlZLfzKvIbLbkQG5MO2I4dovRfhxwX87xKRlA3l2J2Q33TyzH8lr3Om61ZS1VjniblHzr49E9jf_7h71gYhYL3GY9c7IPJzYX_5c7k_9vJc1UtFsC04cDVBPSK0UdGl62XkCoGZ0Xm5jPxDJ"; // token expires after around one day
 const dataPath = "data/";
 let layerList;
 let dropboxButton = document.getElementById("dropbox-button");
