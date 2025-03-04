@@ -18,8 +18,8 @@ const map = new ol.Map({
 
 // DROPBOX
 
-// const REDIRECT_URI = `${window.location.origin}/TravelBase/`; //"http://localhost:8000/";
-const REDIRECT_URI = "http://localhost:8000/"; //"http://localhost:8000/";
+const REDIRECT_URI = `${window.location.origin}/TravelBase/`; //"http://localhost:8000/";
+// const REDIRECT_URI = "http://localhost:8000/"; //"http://localhost:8000/";
 
 const CLIENT_ID = "2h95rnvy2dubcsw";
 let dbxAuth = new Dropbox.DropboxAuth({
@@ -33,7 +33,7 @@ window.onload = function () {
   doAuth(); // Runs only once when the page loads
 };
 
-// Local (chagne also the beggining of the loadApp function to run it locally)
+// Local (chagne also the beggining of the loadApp function to run it locally + redirect)
 // loadApp();
 
 function getCodeFromUrl() {
