@@ -123,24 +123,6 @@ export function addData(map, config, layerList) {
         };
       }
     });
-
-    // layerList.forEach(function (layer) {
-    //   if (layer.get("name") === selectAdd.value) {
-    //     let pointName = "New feature";
-    //     map.once("click", (event) => {
-    //       const coordinates = ol.proj.toLonLat(event.coordinate);
-    //       const newFeature = new ol.Feature({
-    //         geometry: new ol.geom.Point(event.coordinate),
-    //         name: pointName,
-    //       });
-
-    //       newFeature.setProperties({ name: pointName });
-    //       layer.getSource().addFeature(newFeature);
-
-    //       console.log("New point added:", pointName, coordinates);
-    //     });
-    //   }
-    // });
   };
 
   document.getElementById("new-data-json").onchange = function () {
