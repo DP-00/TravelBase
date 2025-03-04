@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Cesium GPX Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.94.0/Cesium.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.94.0/Widgets/widgets.css" rel="stylesheet" />
+    <style>
+      html,
+      body,
+      #cesiumContainer {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        display: block;
+      }
+    </style>
+    <script>
+      // Set your Cesium Ion access token here
+      Cesium.Ion.defaultAccessToken =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJmNmQxMWM5Ny0yMjA1LTRjNjctYThhMC0xYzkzNzlhNTMyMTgiLCJpZCI6MTcwMjkxLCJpYXQiOjE2OTY1OTEyODJ9.7teBOJS5KevuWJBphgd3Q_uazxOXMIUql3CBLJMmU3U";
+
+      let viewer;
+
+      window.onload = function () {
+        // Initialize Cesium viewer
+        viewer = new Cesium.Viewer("cesiumContainer", {
+          terrainProvider: Cesium.createWorldTerrain(), // World terrain
+        });
+
+        // Listen for the message event from the parent window
+        window.addEventListener("message", function (event) {
+          // Ensure the message contains GPX data
+          console.log("GPX data received:", event.data.gpxData);
+          if (event.data.gpxData) {
+            loadGeoJsonInCesium(event.data.gpxData);
+          }
+        });
+      };
+
+      window.addEventListener("resize", function () {
+        viewer.resize();
+      });
+
+      function loadGeoJsonInCesium(geoJsonStr) {
+        console.log("Received GeoJSON data:", geoJsonStr);
+
+        const geoJson = JSON.parse(geoJsonStr);
+
+        Cesium.GeoJsonDataSource.load(geoJson, {
+          clampToGround: true, // Drop the line on top of the terrain
+        })
+          .then((dataSource) => {
+            viewer.dataSources.add(dataSource);
+            // Style the line
+            const entities = dataSource.entities.values;
+            for (let i = 0; i < entities.length; i++) {
+              const entity = entities[i];
+              if (entity.polyline) {
+                entity.polyline.material = Cesium.Color.RED;
+                entity.polyline.width = 3;
+              }
+            }
+            viewer.flyTo(dataSource); // Zoom to loaded data
+            console.log("GeoJSON added to Cesium!");
+          })
+          .catch((error) => {
+            console.error("Error loading GeoJSON:", error);
+          });
+      }
+    </script>
+  </head>
+  <body>
+    <div id="cesiumContainer" style="width: 100%; height: 100%"></div>
+  </body>
+</html>

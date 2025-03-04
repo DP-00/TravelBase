@@ -190,7 +190,7 @@ async function loadApp() {
 
       let profile =
         feature.getGeometry() instanceof ol.geom.LineString
-          ? "<button id='showProfile' class='profile-button'><img src='icons/panel.png'></button><button id='downloadGPX' class='profile-button'><img src='icons/download.png'></button>"
+          ? "<button id='showProfile' class='profile-button'><img src='icons/panel.png'></button><button id='downloadGPX' class='profile-button'><img src='icons/download.png'></button></button><button id='cesiumGPX' class='profile-button'><img src='icons/trips.png'></button>"
           : "";
 
       const coord = ol.proj.transform(evt.coordinate, "EPSG:3857", "EPSG:4326");
@@ -237,6 +237,33 @@ async function loadApp() {
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
+        };
+
+        document.getElementById("cesiumGPX").onclick = function () {
+          // Create a feature collection with only this feature
+          const featureClone = feature.clone();
+          featureClone.setId(undefined); // Remove the ID if needed
+          const source = new ol.source.Vector({
+            features: [featureClone],
+          });
+          // Create GPX data from features in the layer
+          const writer = new ol.format.GeoJSON();
+          const geoJsonStr = writer.writeFeatures(source.getFeatures(), {
+            dataProjection: "EPSG:4326",
+            featureProjection: "EPSG:3857",
+          });
+          // Open the cesium.html in a new window (half the size of the screen)
+          const cesiumWindow = window.open(
+            "cesium.html",
+            "_blank",
+            `width=${window.innerWidth / 2}, height=${window.innerHeight / 2}`
+          );
+
+          // Once the Cesium window is loaded, send the GPX data
+          cesiumWindow.addEventListener("load", function () {
+            cesiumWindow.postMessage({ gpxData: geoJsonStr }, "*");
+            console.log("GPX data sent to Cesium window");
+          });
         };
 
         document.getElementById("showProfile").onclick = function () {
@@ -340,8 +367,6 @@ async function loadApp() {
         }
       }
     });
-
-    // TODO: Remove from JSON file as well
   }
 
   // ELEVATION PROFILE
