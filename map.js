@@ -2,9 +2,7 @@ import { getBasemaps } from "./basemap.js";
 import { fetchFile } from "./files.js";
 import { listLayers } from "./files.js";
 import { layerMenu } from "./layers.js";
-// import {loadDropbox} from "./files.js";
-// import {loadDropboxToken} from "./files.js";
-// import { addData, listPropertiesByLayer } from "./add.js";
+import { addData, listPropertiesByLayer } from "./add.js";
 
 const dropboxButton = document.getElementById("dropbox-button");
 const infoContainer = document.getElementById("info-container");
@@ -20,7 +18,9 @@ const map = new ol.Map({
 
 // DROPBOX
 
-const REDIRECT_URI = `${window.location.origin}/TravelBase/`; //"http://localhost:8000/";
+// const REDIRECT_URI = `${window.location.origin}/TravelBase/`; //"http://localhost:8000/";
+const REDIRECT_URI = "http://localhost:8000/"; //"http://localhost:8000/";
+
 const CLIENT_ID = "2h95rnvy2dubcsw";
 let dbxAuth = new Dropbox.DropboxAuth({
   clientId: CLIENT_ID,
@@ -28,9 +28,13 @@ let dbxAuth = new Dropbox.DropboxAuth({
 var configLink = "";
 var dbx = "";
 
+// Dropbox
 window.onload = function () {
   doAuth(); // Runs only once when the page loads
 };
+
+// Local (chagne also the beggining of the loadApp function to run it locally)
+// loadApp();
 
 function getCodeFromUrl() {
   return utils.parseQueryString(window.location.search).code;
@@ -91,16 +95,20 @@ if (hasRedirectedFromAuth()) {
 }
 
 async function loadApp() {
-  // let dropboxToken = await loadDropboxToken();
-  // let dropbox = await loadDropbox();
-
   map.addLayer(getBasemaps(map));
+
+  // Dropbox
   const config = await fetchFile(configLink); // or "data/conf.json" for local files
   await listLayers(map, config.layers, dbx);
+
+  // Local version
+  // const config = await fetchFile("data/conf.json"); // or "data/conf.json" for local files
+  // await listLayers(map, config.layers, "");
+
   let layerList = await map.getLayers().getArray();
 
   layerMenu(map, layerList);
-  // addData(map, config, layerList);
+  addData(map, config, layerList);
 
   // POP-UP
 
@@ -124,8 +132,9 @@ async function loadApp() {
 
       let profile =
         feature.getGeometry() instanceof ol.geom.LineString
-          ? "<button id='showProfile' class='profile-button'><img src='icons/panel.png'></button>"
+          ? "<button id='showProfile' class='profile-button'><img src='icons/panel.png'></button><button id='downloadGPX' class='profile-button'><img src='icons/send.png'></button>"
           : "";
+
       const coord = ol.proj.transform(evt.coordinate, "EPSG:3857", "EPSG:4326");
       const googleMap = `http://www.google.com/maps/place/${coord[1]},${coord[0]}`; // or `https://www.google.com/maps/dir/?api=1&destination=${coord[1]}%2C${coord[0]}&travelmode=transit`;
 
@@ -139,13 +148,39 @@ async function loadApp() {
       popup.show(evt.coordinate, popupContent);
 
       document.getElementById("popEdit").onclick = function () {
-        // editPopup(feature, evt);
+        editPopup(feature, evt);
       };
       document.getElementById("popDelete").onclick = function () {
         deletePopup(feature);
       };
 
       if (feature.getGeometry() instanceof ol.geom.LineString) {
+        document.getElementById("downloadGPX").onclick = function () {
+          const format = new ol.format.GPX();
+
+          // Create a feature collection with only this feature
+          const featureClone = feature.clone();
+          featureClone.setId(undefined); // Remove the ID if needed
+          const source = new ol.source.Vector({
+            features: [featureClone],
+          });
+
+          const gpxData = format.writeFeatures(source.getFeatures(), {
+            dataProjection: "EPSG:4326",
+            featureProjection: "EPSG:3857",
+          });
+
+          const blob = new Blob([gpxData], { type: "application/gpx+xml" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "track.gpx";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        };
+
         document.getElementById("showProfile").onclick = function () {
           let isProfile = 0;
           map.getControls().forEach(function (control) {
@@ -164,94 +199,76 @@ async function loadApp() {
     }
   });
 
-  // function editPopup(feature, evt) {
-  //   let content = "";
+  function editPopup(feature, evt) {
+    let content = "";
 
-  //   layerList.forEach(function (layer) {
-  //     if (!specialLayers.includes(layer.get("name"))) {
-  //       let source = layer.getSource();
-  //       if (source.hasFeature(feature)) {
-  //         console.log(layer);
-  //         const layerKeys = listPropertiesByLayer(layer.get("name"), config);
+    layerList.forEach((layer) => {
+      if (specialLayers.includes(layer.get("name"))) return;
 
-  //         for (const [key, value] of layerKeys) {
-  //           let featureValue = feature.get(key) != undefined ? feature.get(key) : "";
+      let source = layer.getSource();
+      if (!source.hasFeature(feature)) return;
 
-  //           console.log(value);
-  //           switch (value) {
-  //             case "Charset":
-  //               content += "<p><b>" + key + "</b>:  " + '<input value="' + featureValue + '">' + "</p>";
-  //               break;
-  //             case "Number":
-  //               content += "<p><b>" + key + "</b>:  " + '<input type="number" value="' + featureValue + '">' + "</p>";
-  //               break;
-  //             case "Select":
-  //               let options = "";
-  //               for (var i = 0; i < config["layers"].length; i++) {
-  //                 if (layer.get("name") === config["layers"][i]["name"]) {
-  //                   for (var j = 0; j < config["layers"][i]["fields"].length; j++) {
-  //                     console.log(config["layers"][i]["fields"][j]["fieldName"], key);
-  //                     if (config["layers"][i]["fields"][j]["fieldName"] === key) {
-  //                       if (config["layers"][i]["fields"][j]["fieldSelect"]) {
-  //                         let selectArray = config["layers"][i]["fields"][j]["fieldSelect"].split(",");
-  //                         for (let l = 0; l < selectArray.length; l++) {
-  //                           options += `<option value=${selectArray[l]}>${selectArray[l]}</option>`;
-  //                         }
-  //                       }
-  //                     }
-  //                   }
-  //                 }
-  //               }
+      console.log(layer);
+      const layerKeys = listPropertiesByLayer(layer.get("name"), config);
 
-  //               content += `<b>${key}</b>:<select multiple>${options}</select> `;
+      layerKeys.forEach((value, key) => {
+        let featureValue = feature.get(key) ?? "";
+        console.log(value);
 
-  //               break;
-  //           }
-  //         }
+        if (value === "Charset" || value === "Number" || value === "Bool" || value === "Date") {
+          let type = value === "Number" ? "number" : value === "Date" ? "date" : value === "Bool" ? "checkbox" : "text";
+          content += `<p><b>${key}</b>: <input type="${type}" value="${featureValue}"></p>`;
+        } else if (value === "Select") {
+          let options =
+            config.layers
+              .find((l) => l.name === layer.get("name"))
+              ?.fields.find((f) => f.fieldName === key)
+              ?.fieldSelect?.split(",")
+              .map((opt) => `<option value="${opt}">${opt}</option>`)
+              .join("") || "";
 
-  //         let popupContent = `<form  class="trip-form" id="new-trip-form">
-  //                   <div><h2>${feature.get("name")}</h2>${content}
-  //                   <button id='popSave' class='edit-button'><img src='icons/checked.png'></button>
-  //                   </div>
-  //                   </form>`;
+          content += `<b>${key}</b>:<select multiple>${options}</select>`;
+        }
+      });
 
-  //         popup.show(evt.coordinate, popupContent);
+      let popupContent = `
+            <form class="trip-form" id="new-trip-form">
+                <div>
+                    <h2>${feature.get("name")}</h2>${content}
+                    <button id='popSave' class='edit-button'><img src='icons/checked.png'></button>
+                </div>
+            </form>`;
 
-  //         const editForm = document.getElementById("new-trip-form").elements;
+      popup.show(evt.coordinate, popupContent);
+      const editForm = document.getElementById("new-trip-form").elements;
 
-  //         document.getElementById("popSave").onclick = function (event) {
-  //           event.preventDefault();
+      document.getElementById("popSave").onclick = function (event) {
+        event.preventDefault();
+        if (!window.confirm("Update?")) return;
 
-  //           let i = 0;
-  //           for (const [key, value] of layerKeys) {
-  //             console.log(editForm[i].selectedOptions);
-  //             if (editForm[i].selectedOptions) {
-  //               let options = "";
+        let i = 0;
+        layerKeys.forEach((_, key) => {
+          if (editForm[i].selectedOptions) {
+            let options = Array.from(editForm[i].selectedOptions)
+              .map((option) => option.value)
+              .join(", ");
+            feature.set(key, options);
+          } else {
+            feature.set(key, editForm[i].value);
+          }
+          i++;
+        });
 
-  //               for (let option in editForm[i].selectedOptions) {
-  //                 console.log(editForm[i].selectedOptions[option].value);
-
-  //                 if (editForm[i].selectedOptions[option].value != undefined) {
-  //                   options += editForm[i].selectedOptions[option].value + ", ";
-  //                 }
-  //               }
-  //               options = options.substring(0, options.length - 2);
-  //               console.log(options);
-  //               feature.set(key, options);
-  //             } else {
-  //               feature.set(key, editForm[i].value);
-  //             }
-
-  //             i++;
-  //           }
-  //           popup.hide();
-  //         };
-  //       }
-  //     }
-  //   });
-  // }
+        popup.hide();
+      };
+    });
+  }
 
   function deletePopup(feature) {
+    if (!window.confirm("Delete?")) {
+      return; // If the user cancels, do nothing
+    }
+
     layerList.forEach(function (layer) {
       console.log(layer);
       if (!specialLayers.includes(layer.get("name"))) {
@@ -264,7 +281,7 @@ async function loadApp() {
       }
     });
 
-    // dodatkowo usunac z json file
+    // TODO: Remove from JSON file as well
   }
 
   // ELEVATION PROFILE

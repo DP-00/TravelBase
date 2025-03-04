@@ -260,3 +260,65 @@ input[type="submit"]:hover,
 .ol-profil {
   color: #050e06;
 }
+
+/* ADD */
+#add-form label {
+  /* padding-left: 1rem; */
+  display: block;
+}
+
+.radio {
+  /* background: #454857; */
+  padding: 4px;
+  border-radius: 3px;
+
+  position: relative;
+}
+
+.radio input {
+  width: 100%;
+  /* height: 100%; */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  outline: none;
+  cursor: pointer;
+  border-radius: 2px;
+  padding: 8px 8px;
+  /* background: rgb(69, 72, 87); */
+  color: #bdbdbdbd;
+  margin: 0;
+}
+
+.radio input:checked {
+  background-color: var(--background);
+  color: #fff;
+}
+
+.radio input:before {
+  content: attr(label);
+  display: inline-block;
+  text-align: center;
+  width: 100%;
+}
+
+form .radio {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 4rem;
+}
+
+fieldset > .radio {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 4rem;
+}
+
+div > .radio {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 4rem;
+}

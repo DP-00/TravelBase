@@ -1,16 +1,6 @@
 const dataPath = "data/";
 
 // DATA LOADING
-// empty string = local files, otherwise dropbox object is passed
-// export async function loadFiles(fileSource) {
-//   if (!fileSource) {
-//     let dataLocal = await fetchFile("data/conf.json");
-//     return dataLocal;
-//   } else {
-//     let dataDropbox = await fetchDropboxFile(fileSource, "/conf.json");
-//     return dataDropbox;
-//   }
-// }
 
 export async function fetchFile(link) {
   let result = await fetch(link);
