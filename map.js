@@ -8,6 +8,7 @@ const dropboxButton = document.getElementById("dropbox-button");
 const infoContainer = document.getElementById("info-container");
 const buttonContainer = document.getElementById("button-container");
 const specialLayers = ["Basemaps", "TripTemp", "profile-temp"];
+
 const map = new ol.Map({
   target: "map",
   view: new ol.View({
@@ -107,8 +108,65 @@ async function loadApp() {
 
   let layerList = await map.getLayers().getArray();
 
-  layerMenu(map, layerList);
+  layerMenu(map, dbx, layerList);
   addData(map, config, layerList);
+
+  // UPDATE LAYER WARNING
+  let updatedLayers = [];
+  setTimeout(closeWarning, 5000);
+
+  // This function adds the layer name to the updatedLayers array if it's not already in there
+  function markLayerAsUpdated(layerName) {
+    if (!updatedLayers.includes(layerName)) {
+      updatedLayers.push(layerName);
+    }
+
+    showUpdateWarning();
+  }
+
+  // This function displays the warning if there are any updated layers
+  function showUpdateWarning() {
+    const warningElement = document.getElementById("updateWarning");
+    const warningTextElement = document.getElementById("warningText");
+
+    // If there are updated layers, show the warning
+    if (updatedLayers.length > 0) {
+      warningElement.style.display = "block";
+      warningTextElement.innerHTML = `The layers ${updatedLayers.join(", ")} have been updated.`;
+    }
+  }
+
+  // This function hides the warning and clears the updatedLayers array
+  function closeWarning() {
+    const warningElement = document.getElementById("updateWarning");
+    warningElement.style.display = "none";
+    updatedLayers = []; // Clear the updated layers array when the warning is closed
+  }
+
+  // Add event listener to the close button of the warning
+  document.getElementById("closeWarningButton").onclick = closeWarning;
+
+  // Detect changes in the layers (add, remove, or change features)
+  layerList.forEach((layer) => {
+    if (layer instanceof ol.layer.Vector) {
+      layer.getSource().on("addfeature", function (event) {
+        markLayerAsUpdated(layer.get("name"));
+      });
+
+      layer.getSource().on("removefeature", function (event) {
+        markLayerAsUpdated(layer.get("name"));
+      });
+
+      // For updating feature, calling the function in pop-up edit, cause it is not possibe to detect that
+    }
+  });
+
+  // Show a warning message when the user tries to close the app with unsaved updates
+  window.onbeforeunload = function (event) {
+    if (updatedLayers.length > 0) {
+      event.returnValue = "There are unsaved updates. Are you sure you want to exit?";
+    }
+  };
 
   // POP-UP
 
@@ -132,7 +190,7 @@ async function loadApp() {
 
       let profile =
         feature.getGeometry() instanceof ol.geom.LineString
-          ? "<button id='showProfile' class='profile-button'><img src='icons/panel.png'></button><button id='downloadGPX' class='profile-button'><img src='icons/send.png'></button>"
+          ? "<button id='showProfile' class='profile-button'><img src='icons/panel.png'></button><button id='downloadGPX' class='profile-button'><img src='icons/download.png'></button>"
           : "";
 
       const coord = ol.proj.transform(evt.coordinate, "EPSG:3857", "EPSG:4326");
@@ -261,6 +319,8 @@ async function loadApp() {
 
         popup.hide();
       };
+
+      markLayerAsUpdated(layer.get("name"));
     });
   }
 
@@ -377,6 +437,8 @@ async function loadApp() {
       }
     }
   }
+
+  // closeWarning(); // close first warning on load about updated features
 
   // MAP WIDGETS
 

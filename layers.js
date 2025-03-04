@@ -1,7 +1,7 @@
 const layerContent = document.getElementById("layer-container");
 const specialLayers = ["Basemaps", "TripTemp", "profile-temp"];
 
-export function layerMenu(map, layerList) {
+export function layerMenu(map, dbx, layerList) {
   layerList.forEach((layer) => {
     if (!specialLayers.includes(layer.get("name"))) {
       // adding a box for icon with class name and unique id
@@ -48,7 +48,7 @@ export function layerMenu(map, layerList) {
       const downloadElem = document.createElement("button");
       layerDiv.appendChild(downloadElem);
       const downloadElemImg = document.createElement("img");
-      downloadElemImg.src = "icons/send.png";
+      downloadElemImg.src = "icons/download.png";
       downloadElem.appendChild(downloadElemImg);
       downloadElem.onclick = function () {
         var writer = new ol.format.GeoJSON();
@@ -64,6 +64,39 @@ export function layerMenu(map, layerList) {
         document.body.appendChild(element);
         element.click();
         document.body.removeChild(element);
+      };
+
+      // Save to Dropbox
+      const dropboxElem = document.createElement("button");
+      layerDiv.appendChild(dropboxElem);
+      const dropboxElemImg = document.createElement("img");
+      dropboxElemImg.src = "icons/send.png";
+      dropboxElem.appendChild(dropboxElemImg);
+      dropboxElem.onclick = function () {
+        if (!window.confirm("Upload?")) return;
+
+        var writer = new ol.format.GeoJSON();
+        var geoJsonStr = writer.writeFeatures(layer.getSource().getFeatures(), {
+          dataProjection: "EPSG:4326",
+          featureProjection: "EPSG:3857",
+        });
+
+        // Convert GeoJSON string to a Blob
+        const file = new Blob([geoJsonStr], { type: "application/json" });
+
+        // Upload to Dropbox
+        dbx
+          .filesUpload({
+            path: "/" + layer.get("name") + ".geojson",
+            contents: file,
+            mode: "overwrite", // Ensures the file is replaced if it exists
+          })
+          .then(function (response) {
+            console.log("File uploaded successfully:", response);
+          })
+          .catch(function (error) {
+            console.error("Error uploading file:", error);
+          });
       };
     }
   });

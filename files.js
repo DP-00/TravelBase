@@ -47,10 +47,6 @@ export async function listLayers(map, layers, dataSource) {
   }
 }
 
-// dbx.filesUpload({path: '/' + file.name, contents: file}).then(function(response) {
-//     console.log(response);
-// })
-
-// return dbx.filesListFolder({
-// 	path: ''
-// });
+export function updatedFiles(changedFiles) {
+  changedFiles = [];
+}
