@@ -15,6 +15,37 @@
         overflow: hidden;
         display: block;
       }
+      #datetime-container {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 8px 12px;
+        border-radius: 5px;
+        color: white;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      #datetime {
+        font-size: 14px;
+        padding: 4px;
+      }
+
+      #datetime-container button {
+        background: #ff9800;
+        color: white;
+        border: none;
+        padding: 5px 8px;
+        cursor: pointer;
+        border-radius: 3px;
+      }
+
+      #datetime-container button:hover {
+        background: #e68900;
+      }
     </style>
     <script>
       // Set your Cesium Ion access token here
@@ -26,8 +57,16 @@
       window.onload = function () {
         // Initialize Cesium viewer
         viewer = new Cesium.Viewer("cesiumContainer", {
-          terrainProvider: Cesium.createWorldTerrain(), // World terrain
+          terrainProvider: Cesium.createWorldTerrain({
+            requestVertexNormals: true, // needed for shadows on terrain
+          }), // World terrain
         });
+        // Enable accurate sun lighting
+        viewer.scene.globe.depthTestAgainstTerrain = true;
+        viewer.scene.globe.enableLighting = true;
+        viewer.scene.light = new Cesium.SunLight();
+        viewer.scene.globe.dynamicAtmosphereLighting = true;
+        viewer.scene.globe.dynamicAtmosphereLightingFromSun = false;
 
         // Listen for the message event from the parent window
         window.addEventListener("message", function (event) {
@@ -69,9 +108,30 @@
             console.error("Error loading GeoJSON:", error);
           });
       }
+
+      function updateSunPosition() {
+        const datetimeInput = document.getElementById("datetime").value;
+
+        if (!datetimeInput) {
+          alert("Please select a date and time.");
+          return;
+        }
+
+        // Convert input to Cesium's JulianDate format
+        const selectedTime = Cesium.JulianDate.fromDate(new Date(datetimeInput));
+
+        // Update the scene's time
+        viewer.clock.currentTime = selectedTime;
+        console.log("Sun position updated to:", datetimeInput);
+      }
     </script>
   </head>
   <body>
     <div id="cesiumContainer" style="width: 100%; height: 100%"></div>
+    <div id="datetime-container">
+      <label for="datetime">Sunlight:</label>
+      <input type="datetime-local" id="datetime" />
+      <button onclick="updateSunPosition()">Update</button>
+    </div>
   </body>
 </html>
