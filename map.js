@@ -190,7 +190,7 @@ async function loadApp() {
 
       let profile =
         feature.getGeometry() instanceof ol.geom.LineString
-          ? "<button id='showProfile' class='profile-button'><img src='icons/panel.png'></button><button id='downloadGPX' class='profile-button'><img src='icons/download.png'></button></button><button id='cesiumGPX' class='profile-button'><img src='icons/trips.png'></button>"
+          ? "<button id='showProfile' class='profile-button'><img src='icons/panel.png'></button><button id='downloadGPX' class='profile-button'><img src='icons/export.png'></button></button><button id='cesiumGPX' class='profile-button'><img src='icons/cesium.png'></button>"
           : "";
 
       const coord = ol.proj.transform(evt.coordinate, "EPSG:3857", "EPSG:4326");

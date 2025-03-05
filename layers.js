@@ -44,11 +44,156 @@ export function layerMenu(map, dbx, layerList) {
         map.getView().fit(layer.getSource().getExtent());
       };
 
+      // Table
+      // Table button
+      const tableElem = document.createElement("button");
+      tableElem.title = "table";
+      layerDiv.appendChild(tableElem);
+      const tableElemImg = document.createElement("img");
+      tableElemImg.src = "icons/table.png";
+      tableElem.appendChild(tableElemImg);
+
+      const highlightStyle = new ol.style.Style({
+        stroke: new ol.style.Stroke({
+          color: "rgba(255, 0, 0, 1)", // Red outline
+          width: 8,
+        }),
+        fill: new ol.style.Fill({
+          color: "rgba(255, 0, 0, 0.3)", // Semi-transparent red fill
+        }),
+        image: new ol.style.Circle({
+          radius: 10, // Radius for the point (to make it visible)
+          fill: new ol.style.Fill({ color: "rgba(255, 0, 0, 0.6)" }), // Red fill for point
+          stroke: new ol.style.Stroke({ color: "rgba(255, 0, 0, 1)", width: 2 }), // Red stroke for point
+        }),
+      });
+      let highlightFeature = null; // Will hold the feature that's highlighted
+      let originalStyle = null; // To store the original style
+
+      tableElem.onclick = function () {
+        let vectorSource = layer.getSource();
+        let features = vectorSource.getFeatures();
+
+        if (features.length === 0) {
+          alert("No features available in this layer.");
+          return;
+        }
+
+        const tableContainer = document.getElementById("table-container");
+        tableContainer.style.resize = "both";
+        const tbody = document.querySelector("#feature-table tbody");
+        const headerRow = document.getElementById("table-header");
+
+        tbody.innerHTML = ""; // Clear rows
+        headerRow.innerHTML = ""; // Clear headers
+
+        // Get properties dynamically from the first feature
+        const featureProperties = Object.keys(features[0].getProperties()).filter((prop) => prop !== "geometry");
+
+        // Create table headers
+        featureProperties.forEach((prop, index) => {
+          const th = document.createElement("th");
+          th.innerHTML = `${prop} <button class="sort-btn" data-index="${index}">⬍</button>`;
+          headerRow.appendChild(th);
+        });
+
+        // Populate table rows
+        features.forEach((feature) => {
+          const row = document.createElement("tr");
+
+          featureProperties.forEach((prop) => {
+            const cell = document.createElement("td");
+            cell.textContent = feature.get(prop);
+            row.appendChild(cell);
+          });
+
+          row.addEventListener("click", () => {
+            // const coords = feature.getGeometry().getCoordinates();
+            const geometry = feature.getGeometry();
+
+            if (geometry.getType() === "Point") {
+              // Zoom to point
+              map.getView().animate({ center: geometry.getCoordinates(), zoom: 15 });
+            } else {
+              // Zoom to line or polygon: Fit the view to the feature's extent
+              map.getView().fit(geometry.getExtent(), { duration: 1000, padding: [50, 50, 50, 50] });
+            }
+            // map.getView().animate({ center: coords, zoom: 15 });
+
+            // Highlight the feature after zooming
+            if (highlightFeature) {
+              highlightFeature.setStyle(originalStyle); // Restore previous style
+            }
+
+            originalStyle = feature.getStyle(); // Save the original style
+            feature.setStyle(highlightStyle); // Apply highlight style
+
+            // Remove highlight after 3 seconds
+            setTimeout(() => {
+              feature.setStyle(originalStyle); // Restore original style
+            }, 3000);
+
+            // Set the highlighted feature
+            highlightFeature = feature;
+          });
+
+          tbody.appendChild(row);
+        });
+
+        // Add sorting event listeners
+        document.querySelectorAll(".sort-btn").forEach((btn) => {
+          btn.addEventListener("click", () => sortTable(parseInt(btn.dataset.index)));
+        });
+
+        tableContainer.style.display = "block"; // Show table
+      };
+
+      // Close table event
+      document.getElementById("close-table").onclick = () => {
+        document.getElementById("table-container").style.display = "none";
+      };
+
+      function sortTable(columnIndex) {
+        const tbody = document.querySelector("#feature-table tbody");
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+
+        let ascending = true;
+        if (tbody.dataset.sortIndex == columnIndex && tbody.dataset.sortOrder === "asc") {
+          ascending = false;
+        }
+
+        rows.sort((a, b) => {
+          const valA = a.cells[columnIndex].textContent;
+          const valB = b.cells[columnIndex].textContent;
+
+          const numA = parseFloat(valA);
+          const numB = parseFloat(valB);
+
+          // Check if the values are valid dates
+          const dateA = new Date(valA);
+          const dateB = new Date(valB);
+          const isDate = !isNaN(dateA.getTime()) && !isNaN(dateB.getTime());
+
+          if (isDate) {
+            return ascending ? dateA - dateB : dateB - dateA;
+          } else if (!isNaN(numA) && !isNaN(numB)) {
+            return ascending ? numA - numB : numB - numA;
+          }
+          return ascending ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        });
+
+        tbody.innerHTML = "";
+        rows.forEach((row) => tbody.appendChild(row));
+
+        tbody.dataset.sortIndex = columnIndex;
+        tbody.dataset.sortOrder = ascending ? "asc" : "desc";
+      }
+
       // Download
       const downloadElem = document.createElement("button");
       layerDiv.appendChild(downloadElem);
       const downloadElemImg = document.createElement("img");
-      downloadElemImg.src = "icons/download.png";
+      downloadElemImg.src = "icons/export.png";
       downloadElem.appendChild(downloadElemImg);
       downloadElem.onclick = function () {
         var writer = new ol.format.GeoJSON();

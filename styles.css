@@ -359,3 +359,59 @@ div > .radio {
 .close-warning-button:hover {
   color: red;
 }
+
+/* Layer table */
+
+#table-container {
+  display: none;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  height: 50rem;
+  overflow-y: auto;
+  overflow-x: auto;
+  z-index: 1000;
+  border-radius: 5px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th,
+td {
+  border: 0.1px solid var(--grey);
+  padding: 8px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  background-color: var(--dark-background);
+}
+tr {
+  background-color: var(--border);
+}
+tr:nth-child(even) {
+  background-color: var(--background);
+}
+tr:hover {
+  background-color: var(--dark-grey);
+}
+.sort-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  margin-left: 5px;
+}
+.close-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: red;
+  color: white;
+  border: none;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  text-align: center;
+  font-weight: bold;
+  line-height: 20px;
+}
