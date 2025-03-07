@@ -91,7 +91,7 @@ export function addData(map, config, layerList) {
               dataProjection: "EPSG:4326",
               featureProjection: "EPSG:3857",
             });
-
+            addLineCalulcations(fileFeatures);
             createFileForm(map, fileFeatures, config, layer);
           };
         });
@@ -118,76 +118,7 @@ export function addData(map, config, layerList) {
               featureProjection: "EPSG:3857",
             });
 
-            // Convert MultiLineString geometries to LineString if necessary
-            fileFeatures.forEach((feature) => {
-              const geometry = feature.getGeometry();
-              if (geometry instanceof ol.geom.MultiLineString) {
-                // Convert MultiLineString to LineString by taking the first line
-                const lineString = new ol.geom.LineString(geometry.getCoordinates()[0]);
-                feature.setGeometry(lineString);
-              }
-
-              // Calculate and set additional properties
-              const coords = feature.getGeometry().getCoordinates();
-              if (coords.length > 1) {
-                let distance = 0;
-                let elevationGain = 0;
-                let elevationLoss = 0;
-                let minAltitude = Infinity;
-                let maxAltitude = -Infinity;
-                let startTime = null;
-                let endTime = null;
-
-                for (let i = 0; i < coords.length - 1; i++) {
-                  const [x1, y1, alt1, time1] = coords[i];
-                  const [x2, y2, alt2, time2] = coords[i + 1];
-
-                  // Convert EPSG:3857 coordinates to EPSG:4326 for distance calculation
-                  const coord1 = ol.proj.transform([x1, y1], "EPSG:3857", "EPSG:4326");
-                  const coord2 = ol.proj.transform([x2, y2], "EPSG:3857", "EPSG:4326");
-
-                  // Calculate distance in meters
-                  distance += ol.sphere.getDistance(coord1, coord2);
-
-                  if (alt1 !== undefined && alt2 !== undefined) {
-                    const elevationDiff = alt2 - alt1;
-                    if (elevationDiff > 0) {
-                      elevationGain += elevationDiff;
-                    } else {
-                      elevationLoss += Math.abs(elevationDiff);
-                    }
-                  }
-
-                  // Track max and min altitude
-                  if (alt1 !== undefined) {
-                    minAltitude = Math.min(minAltitude, alt1);
-                    maxAltitude = Math.max(maxAltitude, alt1);
-                  }
-
-                  // Get start and end timestamps
-                  if (time1 && !startTime) startTime = new Date(time1 * 1000);
-                  if (time2) endTime = new Date(time2 * 1000);
-                }
-
-                // Convert duration from seconds to hours with 3 decimal places
-                let duration = startTime && endTime ? (endTime - startTime) / 3600000 : null; // Hours
-
-                // Extract only the date part (YYYY-MM-DD) from the start time
-                const dateVisited = startTime ? startTime.toISOString().split("T")[0] : null;
-
-                // Assign calculated properties to feature
-                feature.set("dateVisited", dateVisited); // Convert to km
-                feature.set("isVisited", true);
-                feature.set("distance", (distance / 1000).toFixed(2)); // Convert to km
-                feature.set("elevation_gain", elevationGain.toFixed(2));
-                feature.set("elevation_loss", elevationLoss.toFixed(2));
-                feature.set("min_altitude", minAltitude === Infinity ? null : minAltitude.toFixed(2));
-                feature.set("max_altitude", maxAltitude === -Infinity ? null : maxAltitude.toFixed(2));
-                feature.set("duration", duration !== null ? duration.toFixed(2) : "N/A"); // Hours
-
-                console.log(feature);
-              }
-            });
+            addLineCalulcations(fileFeatures);
 
             createFileForm(map, fileFeatures, config, layer);
           };
@@ -195,6 +126,82 @@ export function addData(map, config, layerList) {
       }
     });
   };
+}
+
+function addLineCalulcations(fileFeatures) {
+  // Convert MultiLineString geometries to LineString if necessary
+  fileFeatures.forEach((feature) => {
+    const geometry = feature.getGeometry();
+    if (geometry instanceof ol.geom.Point) {
+      return;
+    }
+    if (geometry instanceof ol.geom.MultiLineString) {
+      // Convert MultiLineString to LineString by taking the first line
+      const lineString = new ol.geom.LineString(geometry.getCoordinates()[0]);
+      feature.setGeometry(lineString);
+    }
+
+    // Calculate and set additional properties
+    const coords = feature.getGeometry().getCoordinates();
+    if (coords.length > 1) {
+      let distance = 0;
+      let elevationGain = 0;
+      let elevationLoss = 0;
+      let minAltitude = Infinity;
+      let maxAltitude = -Infinity;
+      let startTime = null;
+      let endTime = null;
+
+      for (let i = 0; i < coords.length - 1; i++) {
+        const [x1, y1, alt1, time1] = coords[i];
+        const [x2, y2, alt2, time2] = coords[i + 1];
+
+        // Convert EPSG:3857 coordinates to EPSG:4326 for distance calculation
+        const coord1 = ol.proj.transform([x1, y1], "EPSG:3857", "EPSG:4326");
+        const coord2 = ol.proj.transform([x2, y2], "EPSG:3857", "EPSG:4326");
+
+        // Calculate distance in meters
+        distance += ol.sphere.getDistance(coord1, coord2);
+
+        if (alt1 !== undefined && alt2 !== undefined) {
+          const elevationDiff = alt2 - alt1;
+          if (elevationDiff > 0) {
+            elevationGain += elevationDiff;
+          } else {
+            elevationLoss += Math.abs(elevationDiff);
+          }
+        }
+
+        // Track max and min altitude
+        if (alt1 !== undefined) {
+          minAltitude = Math.min(minAltitude, alt1);
+          maxAltitude = Math.max(maxAltitude, alt1);
+        }
+
+        // Get start and end timestamps
+        if (time1 && !startTime) startTime = new Date(time1 * 1000);
+        if (time2) endTime = new Date(time2 * 1000);
+      }
+
+      // Convert duration from seconds to hours with 3 decimal places
+      let duration = startTime && endTime ? (endTime - startTime) / 3600000 : null; // Hours
+
+      // Extract only the date part (YYYY-MM-DD) from the start time
+      const dateVisited = startTime ? startTime.toISOString().split("T")[0] : null;
+
+      // Assign calculated properties to feature
+      feature.set("dateVisited", dateVisited); // Convert to km
+      feature.set("isVisited", true);
+      feature.set("distance", (distance / 1000).toFixed(2)); // Convert to km
+      feature.set("elevation_gain", elevationGain.toFixed(2));
+      feature.set("elevation_loss", elevationLoss.toFixed(2));
+      feature.set("min_altitude", minAltitude === Infinity ? null : minAltitude.toFixed(2));
+      feature.set("max_altitude", maxAltitude === -Infinity ? null : maxAltitude.toFixed(2));
+      feature.set("duration", duration !== null ? duration.toFixed(2) : "N/A"); // Hours
+
+      console.log(feature);
+    }
+  });
 }
 
 export function createFeatureForm(layerKeys, layerName, config, newInputs) {
