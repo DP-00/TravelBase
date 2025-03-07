@@ -246,3 +246,48 @@ export function layerMenu(map, dbx, layerList) {
     }
   });
 }
+
+export function parseStyle(styleConfig, feature) {
+  console.log("style");
+  let styleOptions = {};
+
+  if (styleConfig.colorByField && feature) {
+    const fieldValue = feature.get(styleConfig.colorByField.field);
+
+    styleOptions.stroke = new ol.style.Stroke({
+      color: styleConfig.colorByField.values[fieldValue] || "black",
+      width: styleConfig.width || 2,
+      lineDash: styleConfig.dashed ? [4, 8] : undefined,
+    });
+  } else if (styleConfig.color) {
+    styleOptions.stroke = new ol.style.Stroke({
+      color: styleConfig.color,
+      width: styleConfig.width || 2,
+      lineDash: styleConfig.dashed ? [4, 8] : undefined,
+    });
+  }
+
+  if (styleConfig.radiusByField && feature) {
+    const fieldValue = feature.get(styleConfig.radiusByField.field);
+    styleOptions.image = new ol.style.Circle({
+      radius: styleConfig.radiusByField.values[fieldValue] || 4,
+      fill: new ol.style.Fill({ color: styleConfig.color || "black" }),
+    });
+  } else if (styleConfig.radius) {
+    styleOptions.image = new ol.style.Circle({
+      radius: styleConfig.radius,
+      fill: new ol.style.Fill({ color: styleConfig.color || "black" }),
+    });
+  }
+
+  if (styleConfig.iconByField && feature) {
+    const fieldValue = feature.get(styleConfig.iconByField.field);
+    styleOptions.image = new ol.style.Icon({
+      src: styleConfig.iconByField.values[fieldValue] || "icons/unknown.png",
+      scale: styleConfig.scale || 1,
+    });
+  }
+  console.log(styleOptions);
+
+  return new ol.style.Style(styleOptions);
+}
