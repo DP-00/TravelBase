@@ -29,58 +29,7 @@ export function addData(map, config, layerList) {
         console.log(selectAdd.value);
         const layerKeys = listPropertiesByLayer(selectAdd.value, config);
 
-        layerKeys.forEach((type, name) => {
-          const labelElem = document.createElement("label");
-          labelElem.innerText = `${name}: `;
-          newInputs.appendChild(labelElem);
-
-          let inputElem;
-
-          const fieldData = config["layers"]
-            .find((l) => l.name === selectAdd.value)
-            ["fields"].find((f) => f.fieldName === name);
-
-          const defaultValue = fieldData?.fieldDefault || ""; // Get the default value for the field
-
-          if (type === "Select") {
-            inputElem = document.createElement("select");
-            inputElem.name = name;
-            inputElem.multiple = true;
-
-            const options = fieldData?.fieldSelect?.split(",") || [];
-            options.forEach((option) => {
-              const optionElem = document.createElement("option");
-              optionElem.value = optionElem.innerText = option;
-              inputElem.appendChild(optionElem);
-            });
-
-            // Set default value for the select input
-            if (defaultValue) {
-              inputElem.value = defaultValue; // Set the default selected option
-            }
-          } else {
-            inputElem = document.createElement("input");
-            inputElem.name = name;
-
-            if (type === "Number") {
-              inputElem.type = "number";
-            } else if (type === "Date") {
-              inputElem.type = "date";
-            } else if (type === "Bool") {
-              inputElem.type = "checkbox";
-              inputElem.checked = defaultValue === "true"; // Check the checkbox if default is "true"
-            } else {
-              inputElem.type = "text";
-            }
-
-            // Set the default value for text, number, or date inputs
-            if (defaultValue && type !== "Bool") {
-              inputElem.value = defaultValue; // Set the default value
-            }
-          }
-
-          newInputs.appendChild(inputElem);
-        });
+        createFeatureForm(layerKeys, selectAdd.value, config, newInputs);
 
         const submitElem = document.createElement("button");
         submitElem.innerText = "Place";
@@ -116,7 +65,6 @@ export function addData(map, config, layerList) {
               }
             });
 
-            feature.set("trips", []);
             selectAdd.value = "";
             newInputs.innerHTML = null;
           });
@@ -144,7 +92,7 @@ export function addData(map, config, layerList) {
               featureProjection: "EPSG:3857",
             });
 
-            createForm(map, fileFeatures, config, layer);
+            createFileForm(map, fileFeatures, config, layer);
           };
         });
       }
@@ -217,24 +165,31 @@ export function addData(map, config, layerList) {
                   }
 
                   // Get start and end timestamps
-                  if (time1 && !startTime) startTime = new Date(time1);
-                  if (time2) endTime = new Date(time2);
+                  if (time1 && !startTime) startTime = new Date(time1 * 1000);
+                  if (time2) endTime = new Date(time2 * 1000);
                 }
 
                 // Convert duration from seconds to hours with 3 decimal places
-                let duration = startTime && endTime ? (endTime - startTime) / 3600 : null; // Hours
+                let duration = startTime && endTime ? (endTime - startTime) / 3600000 : null; // Hours
+
+                // Extract only the date part (YYYY-MM-DD) from the start time
+                const dateVisited = startTime ? startTime.toISOString().split("T")[0] : null;
 
                 // Assign calculated properties to feature
+                feature.set("dateVisited", dateVisited); // Convert to km
+                feature.set("isVisited", true);
                 feature.set("distance", (distance / 1000).toFixed(2)); // Convert to km
                 feature.set("elevation_gain", elevationGain.toFixed(2));
                 feature.set("elevation_loss", elevationLoss.toFixed(2));
                 feature.set("min_altitude", minAltitude === Infinity ? null : minAltitude.toFixed(2));
                 feature.set("max_altitude", maxAltitude === -Infinity ? null : maxAltitude.toFixed(2));
                 feature.set("duration", duration !== null ? duration.toFixed(2) : "N/A"); // Hours
+
+                console.log(feature);
               }
             });
 
-            createForm(map, fileFeatures, config, layer);
+            createFileForm(map, fileFeatures, config, layer);
           };
         });
       }
@@ -242,7 +197,66 @@ export function addData(map, config, layerList) {
   };
 }
 
-function createForm(map, fileFeatures, config, layer) {
+export function createFeatureForm(layerKeys, layerName, config, newInputs) {
+  layerKeys.forEach((type, name) => {
+    const labelElem = document.createElement("label");
+    labelElem.innerText = `${name}: `;
+    newInputs.appendChild(labelElem);
+
+    let inputElem;
+    console.log(config);
+
+    const fieldData = config["layers"].find((l) => l.name === layerName)["fields"].find((f) => f.fieldName === name);
+
+    if (!fieldData) {
+      console.warn(`Field '${name}' not found in layer config. Skipping.`);
+      return;
+    }
+
+    const defaultValue = fieldData?.fieldDefault || ""; // Get the default value for the field
+
+    if (type === "Select") {
+      inputElem = document.createElement("select");
+      inputElem.name = name;
+      inputElem.multiple = true;
+
+      const options = fieldData?.fieldSelect?.split(",") || [];
+      options.forEach((option) => {
+        const optionElem = document.createElement("option");
+        optionElem.value = optionElem.innerText = option;
+        inputElem.appendChild(optionElem);
+      });
+
+      // Set default value for the select input
+      if (defaultValue) {
+        inputElem.value = defaultValue; // Set the default selected option
+      }
+    } else {
+      inputElem = document.createElement("input");
+      inputElem.name = name;
+
+      if (type === "Number") {
+        inputElem.type = "number";
+      } else if (type === "Date") {
+        inputElem.type = "date";
+      } else if (type === "Bool") {
+        inputElem.type = "checkbox";
+        inputElem.checked = defaultValue === true; // Check the checkbox if default is "true"
+      } else {
+        inputElem.type = "text";
+      }
+
+      // Set the default value for text, number, or date inputs
+      if (defaultValue && type !== "Bool") {
+        inputElem.value = defaultValue; // Set the default value
+      }
+    }
+    console.log(newInputs);
+    newInputs.appendChild(inputElem);
+  });
+}
+
+export function createFileForm(map, fileFeatures, config, layer) {
   const propKeys = listPropertiesByFeatures(fileFeatures);
   const layerKeys = listPropertiesByLayer(selectAdd.value, config);
 
@@ -315,7 +329,7 @@ function createForm(map, fileFeatures, config, layer) {
   };
 }
 
-function listPropertiesByFeatures(features) {
+export function listPropertiesByFeatures(features) {
   let propKeys = [];
 
   features.forEach((feature) => {

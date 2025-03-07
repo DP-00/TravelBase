@@ -3,6 +3,7 @@ import { fetchFile } from "./files.js";
 import { listLayers } from "./files.js";
 import { layerMenu } from "./layers.js";
 import { addData, listPropertiesByLayer } from "./add.js";
+import { filterMenu } from "./filters.js";
 
 const dropboxButton = document.getElementById("dropbox-button");
 const infoContainer = document.getElementById("info-container");
@@ -110,6 +111,7 @@ async function loadApp() {
 
   layerMenu(map, dbx, layerList);
   addData(map, config, layerList);
+  filterMenu(map, config, layerList);
 
   // UPDATE LAYER WARNING
   let updatedLayers = [];
@@ -181,12 +183,20 @@ async function loadApp() {
     if (feature) {
       let popContent = "";
       Object.keys(feature.getProperties()).forEach((key) => {
-        if ((key != "geometry") & (key != "name") & (key != "img") & (key != "trips")) {
-          if (feature.get(key)) {
+        if ((key != "geometry") & (key != "name") & (key != "img") & (key != "link")) {
+          if (feature.get(key) || feature.get(key) === false) {
             popContent += "<p><b>" + key + "</b>:  " + feature.get(key) + "</p>";
           }
         }
       });
+
+      // input link need to have https or http infront, otherwise it is treated as a local one (for example www.google.com won't work)
+      let link =
+        feature.get("link") != undefined && feature.get("link") !== ""
+          ? `<a  target="_blank" href="${feature.get("link").trim()}">Link</a>`
+          : "";
+
+      console.log("link html", link);
 
       let profile =
         feature.getGeometry() instanceof ol.geom.LineString
@@ -198,11 +208,13 @@ async function loadApp() {
 
       let popupContent = `<div><h2>${feature.get(
         "name"
-      )}</h2>${popContent}<p><a  target="_blank" href=${googleMap}>${ol.coordinate.toStringHDMS(coord, 2)}</a>
+      )}</h2>${link}${popContent}<p><a  target="_blank" href=${googleMap}>${ol.coordinate.toStringHDMS(coord, 2)}</a>
             </p><img src=${feature.get("img")} alt="">${profile}			
             <button id='popEdit' class='edit-button'><img src='icons/pencil.png'></button>
 			      <button id='popDelete' class='delete-button'><img src='icons/delete.png'></button>
             </div>`;
+
+      console.log(popupContent);
       popup.show(evt.coordinate, popupContent);
 
       document.getElementById("popEdit").onclick = function () {
@@ -309,7 +321,15 @@ async function loadApp() {
               .find((l) => l.name === layer.get("name"))
               ?.fields.find((f) => f.fieldName === key)
               ?.fieldSelect?.split(",")
-              .map((opt) => `<option value="${opt}">${opt}</option>`)
+              .map((opt) => {
+                let selected = featureValue
+                  .split(",")
+                  .map((v) => v.trim())
+                  .includes(opt.trim())
+                  ? "selected"
+                  : "";
+                return `<option value="${opt}" ${selected}>${opt}</option>`;
+              })
               .join("") || "";
 
           content += `<b>${key}</b>:<select multiple>${options}</select>`;
