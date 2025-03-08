@@ -178,7 +178,13 @@ async function loadApp() {
         let vectorSource = layer.getSource();
         let features = vectorSource.getFeatures();
 
+        console.log(layer.get("name"), features);
         features.forEach((feature) => {
+          feature.setStyle(parseStyle(layerConfig.style, feature));
+        });
+
+        vectorSource.on("addfeature", (event) => {
+          let feature = event.feature;
           feature.setStyle(parseStyle(layerConfig.style, feature));
         });
       }
