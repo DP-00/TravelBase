@@ -109,14 +109,13 @@ async function loadApp() {
 
   let layerList = await map.getLayers().getArray();
   let updatedLayers = [];
+  setTimeout(closeWarning, 5000);
 
   layerMenu(map, dbx, layerList, updatedLayers);
   addData(map, config, layerList);
   filterMenu(map, config, layerList);
 
   // UPDATE LAYER WARNING
-
-  setTimeout(closeWarning, 5000);
 
   // This function adds the layer name to the updatedLayers array if it's not already in there
   function markLayerAsUpdated(layerName) {
@@ -218,6 +217,9 @@ async function loadApp() {
           ? `<a  target="_blank" href="${feature.get("link").trim()}">Link</a>`
           : "";
 
+      let img =
+        feature.get("img") != undefined && feature.get("img") !== "" ? `<img src=${feature.get("img")} alt="">` : "";
+
       let profile =
         feature.getGeometry() instanceof ol.geom.LineString
           ? "<button id='showProfile' class='profile-button'><img src='icons/panel.png'></button><button id='downloadGPX' class='profile-button'><img src='icons/export.png'></button></button><button id='cesiumGPX' class='profile-button'><img src='icons/cesium.png'></button>"
@@ -229,7 +231,7 @@ async function loadApp() {
       let popupContent = `<div><h2>${feature.get(
         "name"
       )}</h2>${link}${popContent}<p><a  target="_blank" href=${googleMap}>${ol.coordinate.toStringHDMS(coord, 2)}</a>
-            </p><img src=${feature.get("img")} alt="">${profile}			
+            </p>${img}${profile}			
             <button id='popEdit' class='edit-button'><img src='icons/pencil.png'></button>
 			      <button id='popDelete' class='delete-button'><img src='icons/delete.png'></button>
             </div>`;
