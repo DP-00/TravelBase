@@ -373,13 +373,18 @@ async function loadApp() {
         if (!window.confirm("Update?")) return;
 
         let i = 0;
-        layerKeys.forEach((_, key) => {
+        layerKeys.forEach((value, key) => {
           if (editForm[i].selectedOptions) {
+            // Handle multi-select dropdowns
             let options = Array.from(editForm[i].selectedOptions)
               .map((option) => option.value)
               .join(", ");
             feature.set(key, options);
+          } else if (value === "Bool") {
+            // Handle checkboxes
+            feature.set(key, editForm[i].checked); // Use `checked` instead of `value`
           } else {
+            // Handle text/number/date fields
             feature.set(key, editForm[i].value);
           }
           i++;

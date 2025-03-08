@@ -195,6 +195,8 @@ input[type="submit"]:hover,
   max-width: 25rem;
   max-height: none;
   overflow-wrap: break-word;
+  max-width: 100%;
+  overflow: visible; /* Allow content to be seen */
 }
 
 .ol-popup:before {
@@ -229,10 +231,17 @@ input[type="submit"]:hover,
   /* width: 20rem; */
   /* max-height: 15rem; */
 
-  margin: 0 auto; /* Centers the image */
+  /* margin: 0 auto;  Centers the image 
   border-radius: 5px;
-  width: calc(100% - 2rem); /* Ensures 1rem gap on both sides */
+  width: calc(100% - 2rem);  Ensures 1rem gap on both sides 
+  height: auto; Maintains aspect ratio */
+
+  display: block;
+  max-width: 100%; /* Ensure it never exceeds the pop-up width */
+  max-height: 15rem; /* Limits height to avoid overly large images */
   height: auto; /* Maintains aspect ratio */
+  object-fit: contain; /* Scales the image without cropping */
+  margin: 0 auto; /* Centers the image */
 }
 
 .img-pop-up {
