@@ -20,8 +20,8 @@ const map = new ol.Map({
 
 // DROPBOX
 
-// const REDIRECT_URI = `${window.location.origin}/TravelBase/`; //"http://localhost:8000/";
-const REDIRECT_URI = "http://localhost:8000/"; //"http://localhost:8000/";
+const REDIRECT_URI = `${window.location.origin}/TravelBase/`; //"http://localhost:8000/";
+// const REDIRECT_URI = "http://localhost:8000/"; //"http://localhost:8000/";
 
 const CLIENT_ID = "2h95rnvy2dubcsw";
 let dbxAuth = new Dropbox.DropboxAuth({
