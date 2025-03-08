@@ -246,3 +246,73 @@ export function layerMenu(map, dbx, layerList) {
     }
   });
 }
+
+function evaluateStyleExpression(expression, feature) {
+  try {
+    return new Function("feature", `return ${expression};`)(feature);
+  } catch (error) {
+    console.error("Error evaluating style expression:", expression, error);
+    return null;
+  }
+}
+
+export function parseStyle(styleConfig, feature) {
+  console.log("Style Config:", styleConfig);
+
+  let styleOptions = {};
+  console.log(styleConfig.width, styleConfig.color, styleConfig.icon);
+  if (styleConfig.width) {
+    let color =
+      typeof styleConfig.color === "string"
+        ? evaluateStyleExpression(styleConfig.color, feature)
+        : styleConfig.color || "black";
+
+    console.log(color);
+    let width =
+      typeof styleConfig.width === "string"
+        ? evaluateStyleExpression(styleConfig.width, feature)
+        : styleConfig.width || 2;
+    console.log(width);
+
+    styleOptions.stroke = new ol.style.Stroke({
+      color: color,
+      width: width,
+      lineDash: styleConfig.dashed ? [4, 8] : undefined,
+    });
+
+    console.log(styleOptions);
+  }
+
+  if (styleConfig.radius) {
+    let colorStroke =
+      typeof styleConfig.colorStroke === "string"
+        ? evaluateStyleExpression(styleConfig.colorStroke, feature)
+        : styleConfig.colorStroke || "black";
+    let colorFill =
+      typeof styleConfig.colorFill === "string"
+        ? evaluateStyleExpression(styleConfig.colorFill, feature)
+        : styleConfig.colorFill || "black";
+    let radius =
+      typeof styleConfig.radius === "string"
+        ? evaluateStyleExpression(styleConfig.radius, feature)
+        : styleConfig.radius || 3;
+
+    styleOptions.image = new ol.style.Circle({
+      radius: radius,
+      fill: new ol.style.Fill({ color: colorFill }),
+      stroke: new ol.style.Stroke({
+        color: colorStroke,
+        width: 1,
+      }),
+    });
+  }
+
+  if (styleConfig.icon) {
+    let iconSrc = evaluateStyleExpression(styleConfig.icon, feature);
+    styleOptions.image = new ol.style.Icon({
+      src: iconSrc,
+      scale: styleConfig.scale,
+    });
+  }
+  return new ol.style.Style(styleOptions);
+}

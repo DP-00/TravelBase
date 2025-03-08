@@ -1,4 +1,5 @@
 import { createFeatureForm, listPropertiesByLayer } from "./add.js";
+import { parseStyle } from "./layers.js";
 
 const layerContent = document.getElementById("filter-container");
 const filterForm = document.getElementById("filter-form");
@@ -41,7 +42,13 @@ export function filterMenu(map, config, layerList) {
         .getSource()
         .getFeatures()
         .forEach((feature) => {
-          feature.setStyle(null); // Restore all features
+          // feature.setStyle(null); // Restore all features
+
+          config.layers.forEach((layerConfig) => {
+            if (layerName === layerConfig.name) {
+              feature.setStyle(parseStyle(layerConfig.style, feature));
+            }
+          });
         });
     };
 
@@ -52,7 +59,7 @@ export function filterMenu(map, config, layerList) {
     formElem.onsubmit = function (event) {
       //   console.log(newInputsFilterSaved);
       event.preventDefault();
-      applyFilter(layer, formElem);
+      applyFilter(layer, formElem, config);
     };
   });
 
@@ -63,7 +70,14 @@ export function filterMenu(map, config, layerList) {
           .getSource()
           .getFeatures()
           .forEach((feature) => {
-            feature.setStyle(null); // Show all features
+            // feature.setStyle(null); // Show all features
+
+            config.layers.forEach((layerConfig) => {
+              console.log("layer", layer.get("name"), layerConfig.name);
+              if (layer.get("name") === layerConfig.name) {
+                feature.setStyle(parseStyle(layerConfig.style, feature));
+              }
+            });
           });
       }
     });
@@ -80,7 +94,15 @@ export function filterMenu(map, config, layerList) {
             const isVisited = feature.get("isVisited") === true || feature.get("isVisited") === "true";
 
             // Hide features that don't have the property or are not visited
-            feature.setStyle(hasProperty && isVisited ? null : new ol.style.Style({}));
+            // feature.setStyle(hasProperty && isVisited ? null : new ol.style.Style({}));
+
+            config.layers.forEach((layerConfig) => {
+              if (layer.get("name") === layerConfig.name) {
+                feature.setStyle(
+                  hasProperty && isVisited ? parseStyle(layerConfig.style, feature) : new ol.style.Style({})
+                );
+              }
+            });
           });
       }
     });
@@ -100,7 +122,15 @@ export function filterMenu(map, config, layerList) {
             const isNotVisited = isVisited === false || isVisited === "false";
 
             // Hide features that are visited or missing the property
-            feature.setStyle(hasProperty && isNotVisited ? null : new ol.style.Style({}));
+            // feature.setStyle(hasProperty && isNotVisited ? null : new ol.style.Style({}));
+
+            config.layers.forEach((layerConfig) => {
+              if (layer.get("name") === layerConfig.name) {
+                feature.setStyle(
+                  hasProperty && isNotVisited ? parseStyle(layerConfig.style, feature) : new ol.style.Style({})
+                );
+              }
+            });
           });
       }
     });
@@ -127,7 +157,13 @@ export function filterMenu(map, config, layerList) {
             const filteredFeatures = hasProperty && (season === "" || allowedMonths.includes(currentMonth));
 
             // Hide features that don't match the condition
-            feature.setStyle(filteredFeatures ? null : new ol.style.Style({}));
+            // feature.setStyle(filteredFeatures ? null : new ol.style.Style({}));
+
+            config.layers.forEach((layerConfig) => {
+              if (layer.get("name") === layerConfig.name) {
+                feature.setStyle(filteredFeatures ? parseStyle(layerConfig.style, feature) : new ol.style.Style({}));
+              }
+            });
           });
       }
     });
@@ -188,85 +224,7 @@ function createFeatureForm2(layerKeys, layerName, config, newInputs) {
   });
 }
 
-// function applyFilter(layer, formElem) {
-//   const filterValues = {};
-
-//   const inputElements = formElem.querySelectorAll("input, select");
-//   inputElements.forEach((input) => {
-//     if (input.multiple) {
-//       filterValues[input.name] = [...input.selectedOptions].map((opt) => opt.value);
-//     } else if (input.type === "checkbox") {
-//       filterValues[input.name] = input.checked;
-//     } else if (input.name.endsWith("_min") || input.name.endsWith("_max")) {
-//       const baseName = input.name.replace(/_(min|max)$/, "");
-//       if (!filterValues[baseName]) {
-//         filterValues[baseName] = {};
-//       }
-//       if (input.value) {
-//         filterValues[baseName][input.name.endsWith("_min") ? "min" : "max"] = parseFloat(input.value);
-//       }
-//     } else if (input.type === "text" && input.value.includes(",")) {
-//       filterValues[input.name] = input.value.split(",").map((v) => v.trim().toLowerCase());
-//     } else if (input.value) {
-//       filterValues[input.name] = input.value.toLowerCase();
-//     }
-//   });
-
-//   // Remove empty filters
-//   Object.keys(filterValues).forEach((key) => {
-//     if (typeof filterValues[key] === "object" && Object.keys(filterValues[key]).length === 0) {
-//       delete filterValues[key];
-//     }
-//   });
-
-//   console.log("Processed Filters:", filterValues);
-
-//   layer
-//     .getSource()
-//     .getFeatures()
-//     .forEach((feature) => {
-//       let isVisible = true;
-
-//       console.log("Feature Properties:", feature.getProperties());
-
-//       for (const [key, value] of Object.entries(filterValues)) {
-//         let featureValue = feature.get(key);
-
-//         console.log(`Checking ${key}:`, featureValue, "against", value);
-
-//         if (value === undefined) continue;
-
-//         if (typeof value === "object" && ("min" in value || "max" in value)) {
-//           const featureNum = parseFloat(featureValue);
-//           if (!isNaN(featureNum)) {
-//             if (value.min !== undefined && featureNum < value.min) {
-//               isVisible = false;
-//               break;
-//             }
-//             if (value.max !== undefined && featureNum > value.max) {
-//               isVisible = false;
-//               break;
-//             }
-//           }
-//         } else if (Array.isArray(value)) {
-//           // Fix: Convert everything to lowercase before comparison
-//           if (!featureValue || !value.map((v) => v.toLowerCase()).includes(String(featureValue).toLowerCase())) {
-//             isVisible = false;
-//             break;
-//           }
-//         } else if (value && (!featureValue || String(featureValue).toLowerCase() !== value)) {
-//           isVisible = false;
-//           break;
-//         }
-//       }
-
-//       console.log(`Feature visibility: ${isVisible}`);
-
-//       feature.setStyle(isVisible ? null : new ol.style.Style({}));
-//     });
-// }
-
-function applyFilter(layer, formElem) {
+function applyFilter(layer, formElem, config) {
   const filterValues = {};
 
   const inputElements = formElem.querySelectorAll("input, select");
@@ -354,6 +312,12 @@ function applyFilter(layer, formElem) {
 
       console.log(`Feature visibility: ${isVisible}`);
 
-      feature.setStyle(isVisible ? null : new ol.style.Style({}));
+      // feature.setStyle(isVisible ? null : new ol.style.Style({}));
+
+      config.layers.forEach((layerConfig) => {
+        if (layer.get("name") === layerConfig.name) {
+          feature.setStyle(isVisible ? parseStyle(layerConfig.style, feature) : new ol.style.Style({}));
+        }
+      });
     });
 }
