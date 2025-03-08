@@ -21,7 +21,7 @@ export function addData(map, config, layerList) {
     });
   });
 
-  document.getElementById("new-data-map").onchange = function () {
+  document.getElementById("new-data-map").onclick = function () {
     newInputs.innerHTML = "";
 
     layerList.forEach((layer) => {
@@ -73,7 +73,7 @@ export function addData(map, config, layerList) {
     });
   };
 
-  document.getElementById("new-data-json").onchange = function () {
+  document.getElementById("new-data-json").onclick = function () {
     newInputs.innerHTML = null;
 
     layerList.forEach(function (layer) {
@@ -99,7 +99,7 @@ export function addData(map, config, layerList) {
     });
   };
 
-  document.getElementById("new-data-gpx").onchange = function () {
+  document.getElementById("new-data-gpx").onclick = function () {
     newInputs.innerHTML = null;
 
     layerList.forEach(function (layer) {

@@ -1,7 +1,7 @@
 const layerContent = document.getElementById("layer-container");
 const specialLayers = ["Basemaps", "TripTemp", "profile-temp"];
 
-export function layerMenu(map, dbx, layerList) {
+export function layerMenu(map, dbx, layerList, updatedLayers) {
   layerList.forEach((layer) => {
     if (!specialLayers.includes(layer.get("name"))) {
       // adding a box for icon with class name and unique id
@@ -238,6 +238,23 @@ export function layerMenu(map, dbx, layerList) {
           })
           .then(function (response) {
             console.log("File uploaded successfully:", response);
+
+            if (response && response.id) {
+              // Ensure upload was successful
+
+              if (updatedLayers.indexOf(layerName) !== -1) {
+                updatedLayers.splice(updatedLayers.indexOf(layer.get("name")), 1); // Correctly remove the item
+              }
+
+              const warningElement = document.getElementById("updateWarning");
+              const warningTextElement = document.getElementById("warningText");
+
+              // If there are updated layers, show the warning
+              if (updatedLayers.length > 0) {
+                warningElement.style.display = "block";
+                warningTextElement.innerHTML = `The layers ${updatedLayers.join(", ")} have been updated.`;
+              }
+            }
           })
           .catch(function (error) {
             console.error("Error uploading file:", error);

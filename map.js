@@ -108,13 +108,14 @@ async function loadApp() {
   // await listLayers(map, config.layers, "");
 
   let layerList = await map.getLayers().getArray();
+  let updatedLayers = [];
 
-  layerMenu(map, dbx, layerList);
+  layerMenu(map, dbx, layerList, updatedLayers);
   addData(map, config, layerList);
   filterMenu(map, config, layerList);
 
   // UPDATE LAYER WARNING
-  let updatedLayers = [];
+
   setTimeout(closeWarning, 5000);
 
   // This function adds the layer name to the updatedLayers array if it's not already in there
@@ -532,7 +533,7 @@ async function loadApp() {
     console.log("select photon");
     map.getView().animate({
       center: e.coordinate,
-      zoom: Math.max(map.getView().getZoom(), 12),
+      zoom: Math.max(map.getView().getZoom(), 15),
     });
   });
 
@@ -542,6 +543,10 @@ async function loadApp() {
   layerList.forEach((layer) => {
     console.log(layer);
     if (layer.get("name") != "Basemaps") {
+      let features = layer.getSource().getFeatures();
+      features.forEach((feature) => {
+        searchSource.addFeature(feature);
+      });
       layer.getSource().on("addfeature", function (e) {
         // e.feature.set("featureType", "country");
         searchSource.addFeature(e.feature);
@@ -559,7 +564,7 @@ async function loadApp() {
     select.getFeatures().clear();
     select.getFeatures().push(e.search);
     let p = e.search.getGeometry().getFirstCoordinate();
-    map.getView().animate({ center: p, zoom: Math.max(map.getView().getZoom(), 12) });
+    map.getView().animate({ center: p, zoom: Math.max(map.getView().getZoom(), 15) });
   });
 }
 
