@@ -284,10 +284,14 @@ export function parseStyle(styleConfig, feature) {
   }
 
   if (styleConfig.radius) {
-    let color =
-      typeof styleConfig.color === "string"
-        ? evaluateStyleExpression(styleConfig.color, feature)
-        : styleConfig.color || "black";
+    let colorStroke =
+      typeof styleConfig.colorStroke === "string"
+        ? evaluateStyleExpression(styleConfig.colorStroke, feature)
+        : styleConfig.colorStroke || "black";
+    let colorFill =
+      typeof styleConfig.colorFill === "string"
+        ? evaluateStyleExpression(styleConfig.colorFill, feature)
+        : styleConfig.colorFill || "black";
     let radius =
       typeof styleConfig.radius === "string"
         ? evaluateStyleExpression(styleConfig.radius, feature)
@@ -295,7 +299,11 @@ export function parseStyle(styleConfig, feature) {
 
     styleOptions.image = new ol.style.Circle({
       radius: radius,
-      fill: new ol.style.Fill({ color: color }),
+      fill: new ol.style.Fill({ color: colorFill }),
+      stroke: new ol.style.Stroke({
+        color: colorStroke,
+        width: 1,
+      }),
     });
   }
 
@@ -308,48 +316,3 @@ export function parseStyle(styleConfig, feature) {
   }
   return new ol.style.Style(styleOptions);
 }
-
-// export function parseStyle(styleConfig, feature) {
-//   console.log("style");
-//   let styleOptions = {};
-
-//   if (styleConfig.colorByField && feature) {
-//     const fieldValue = feature.get(styleConfig.colorByField.field);
-
-//     styleOptions.stroke = new ol.style.Stroke({
-//       color: styleConfig.colorByField.values[fieldValue] || "black",
-//       width: styleConfig.width || 2,
-//       lineDash: styleConfig.dashed ? [4, 8] : undefined,
-//     });
-//   } else if (styleConfig.color) {
-//     styleOptions.stroke = new ol.style.Stroke({
-//       color: styleConfig.color,
-//       width: styleConfig.width || 2,
-//       lineDash: styleConfig.dashed ? [4, 8] : undefined,
-//     });
-//   }
-
-//   if (styleConfig.radiusByField && feature) {
-//     const fieldValue = feature.get(styleConfig.radiusByField.field);
-//     styleOptions.image = new ol.style.Circle({
-//       radius: styleConfig.radiusByField.values[fieldValue] || 4,
-//       fill: new ol.style.Fill({ color: styleConfig.color || "black" }),
-//     });
-//   } else if (styleConfig.radius) {
-//     styleOptions.image = new ol.style.Circle({
-//       radius: styleConfig.radius,
-//       fill: new ol.style.Fill({ color: styleConfig.color || "black" }),
-//     });
-//   }
-
-//   if (styleConfig.iconByField && feature) {
-//     const fieldValue = feature.get(styleConfig.iconByField.field);
-//     styleOptions.image = new ol.style.Icon({
-//       src: styleConfig.iconByField.values[fieldValue] || "icons/unknown.png",
-//       scale: styleConfig.scale || 1,
-//     });
-//   }
-//   console.log(styleOptions);
-
-//   return new ol.style.Style(styleOptions);
-// }
