@@ -1,7 +1,7 @@
 import { getBasemaps } from "./basemap.js";
 import { fetchFile } from "./files.js";
 import { listLayers } from "./files.js";
-import { layerMenu } from "./layers.js";
+import { layerMenu, parseStyle } from "./layers.js";
 import { addData, listPropertiesByLayer } from "./add.js";
 import { filterMenu } from "./filters.js";
 
@@ -169,6 +169,27 @@ async function loadApp() {
       event.returnValue = "There are unsaved updates. Are you sure you want to exit?";
     }
   };
+
+  // LAYER STYLING
+
+  config.layers.forEach((layerConfig) => {
+    layerList.forEach((layer) => {
+      if (layer.get("name") === layerConfig.name) {
+        let vectorSource = layer.getSource();
+        let features = vectorSource.getFeatures();
+
+        console.log(layer.get("name"), features);
+        features.forEach((feature) => {
+          feature.setStyle(parseStyle(layerConfig.style, feature));
+        });
+
+        vectorSource.on("addfeature", (event) => {
+          let feature = event.feature;
+          feature.setStyle(parseStyle(layerConfig.style, feature));
+        });
+      }
+    });
+  });
 
   // POP-UP
 
