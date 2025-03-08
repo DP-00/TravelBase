@@ -70,8 +70,8 @@ input[type="submit"]:hover,
 }
 
 #button-container img {
-  width: 3rem;
-  height: 3rem;
+  width: 2rem;
+  height: 2rem;
   padding: 0.3rem;
 }
 
@@ -186,11 +186,13 @@ input[type="submit"]:hover,
   border-radius: 1rem;
   box-shadow: inset 0px 1px 20px 9px #050e06;
   padding: 2rem 2rem 4rem 2rem;
+  user-select: text; /* Allows text selection */
+  pointer-events: auto; /* Ensures interaction */
 }
 
 .ol-popup-content {
   min-width: 300px;
-  max-width: 30rem;
+  max-width: 25rem;
   max-height: none;
   overflow-wrap: break-word;
 }
@@ -224,8 +226,8 @@ input[type="submit"]:hover,
   position: relative;
   margin: auto;
   border-radius: 5px;
-  width: 26rem;
-  max-height: 25rem;
+  width: 20rem;
+  max-height: 20rem;
 }
 
 .img-pop-up {
@@ -326,7 +328,7 @@ div > .radio {
 /* UPDATE LAYERS WARNING */
 #updateWarning {
   display: none; /* Hidden by default, shown with JS */
-  background-color: #ffcc00;
+  background-color: #2c0606;
   padding: 15px;
   border-radius: 5px;
   margin-bottom: 20px;
@@ -336,7 +338,7 @@ div > .radio {
   transform: translateX(-50%);
   z-index: 1000;
   font-size: 16px;
-  color: black;
+  color: rgb(146, 142, 142);
   width: auto;
   max-width: 400px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);

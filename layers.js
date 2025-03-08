@@ -239,10 +239,12 @@ export function layerMenu(map, dbx, layerList, updatedLayers) {
           .then(function (response) {
             console.log("File uploaded successfully:", response);
 
-            if (response && response.id) {
+            if (response) {
               // Ensure upload was successful
 
-              if (updatedLayers.indexOf(layerName) !== -1) {
+              console.log("response");
+
+              if (updatedLayers.indexOf(layer.get("name")) !== -1) {
                 updatedLayers.splice(updatedLayers.indexOf(layer.get("name")), 1); // Correctly remove the item
               }
 
