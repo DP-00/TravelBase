@@ -242,14 +242,9 @@ export function layerMenu(map, dbx, layerList, updatedLayers) {
             if (response) {
               // Ensure upload was successful
 
-              console.log("response");
-              console.log(updatedLayers);
-
               if (updatedLayers.indexOf(layer.get("name")) !== -1) {
                 updatedLayers.splice(updatedLayers.indexOf(layer.get("name")), 1); // Correctly remove the item
               }
-
-              console.log(updatedLayers);
 
               const warningElement = document.getElementById("updateWarning");
               const warningTextElement = document.getElementById("warningText");
@@ -258,6 +253,8 @@ export function layerMenu(map, dbx, layerList, updatedLayers) {
               if (updatedLayers.length > 0) {
                 warningElement.style.display = "block";
                 warningTextElement.innerHTML = `The layers ${updatedLayers.join(", ")} have been updated.`;
+              } else {
+                warningElement.style.display = "none";
               }
             }
           })

@@ -232,6 +232,7 @@ input[type="submit"]:hover,
   margin: 0 auto; /* Centers the image */
   border-radius: 5px;
   width: calc(100% - 2rem); /* Ensures 1rem gap on both sides */
+  height: auto; /* Maintains aspect ratio */
 }
 
 .img-pop-up {
