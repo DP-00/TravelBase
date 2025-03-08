@@ -11,7 +11,6 @@ export function filterMenu(map, config, layerList) {
 
   layerList.forEach((layer) => {
     const layerName = layer.get("name");
-    console.log(layerName);
     const layerKeys = listPropertiesByLayer(layerName, config);
     if (!layerKeys.size) return;
 
@@ -52,12 +51,9 @@ export function filterMenu(map, config, layerList) {
         });
     };
 
-    // var newInputsFilterSaved = newInputsFilter.querySelectorAll("input, select");
-    // console.log(newInputsFilterSaved);
     formWrapper.appendChild(formElem);
     newInputsFilter.appendChild(formWrapper);
     formElem.onsubmit = function (event) {
-      //   console.log(newInputsFilterSaved);
       event.preventDefault();
       applyFilter(layer, formElem, config);
     };
@@ -73,7 +69,6 @@ export function filterMenu(map, config, layerList) {
             // feature.setStyle(null); // Show all features
 
             config.layers.forEach((layerConfig) => {
-              console.log("layer", layer.get("name"), layerConfig.name);
               if (layer.get("name") === layerConfig.name) {
                 feature.setStyle(parseStyle(layerConfig.style, feature));
               }
@@ -234,7 +229,6 @@ function applyFilter(layer, formElem, config) {
     } else if (input.type === "checkbox") {
       filterValues[input.name] = input.checked;
     } else if (input.name.endsWith("_min") || input.name.endsWith("_max")) {
-      console.log("input text", input.value);
       const baseName = input.name.replace(/_(min|max)$/, "");
       if (!filterValues[baseName]) {
         filterValues[baseName] = {};
@@ -267,7 +261,7 @@ function applyFilter(layer, formElem, config) {
       for (const [key, value] of Object.entries(filterValues)) {
         let featureValue = feature.get(key);
 
-        console.log(`Checking ${key}:`, featureValue, "against", value);
+        // console.log(`Checking ${key}:`, featureValue, "against", value);
 
         if (value === undefined) continue;
 
@@ -309,8 +303,6 @@ function applyFilter(layer, formElem, config) {
           break;
         }
       }
-
-      console.log(`Feature visibility: ${isVisible}`);
 
       // feature.setStyle(isVisible ? null : new ol.style.Style({}));
 

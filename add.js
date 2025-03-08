@@ -26,7 +26,6 @@ export function addData(map, config, layerList) {
 
     layerList.forEach((layer) => {
       if (layer.get("name") === selectAdd.value) {
-        console.log(selectAdd.value);
         const layerKeys = listPropertiesByLayer(selectAdd.value, config);
 
         createFeatureForm(layerKeys, selectAdd.value, config, newInputs);
@@ -34,12 +33,9 @@ export function addData(map, config, layerList) {
         const submitElem = document.createElement("button");
         submitElem.innerText = "Place";
         newInputs.appendChild(submitElem);
-        console.log(newInputs);
         var newInputsSaved = newInputs.querySelectorAll("input, select");
-        console.log(newInputsSaved);
 
         submitElem.onclick = function (event) {
-          console.log(newInputsSaved);
           event.preventDefault();
           let draw = new ol.interaction.Draw({
             source: layer.getSource(),
@@ -52,10 +48,8 @@ export function addData(map, config, layerList) {
             map.removeInteraction(draw);
             var feature = evt.feature;
             const inputElements = newInputs.querySelectorAll("input, select");
-            console.log(inputElements);
 
             inputElements.forEach((input) => {
-              console.log(input.name, input.value);
               if (input.multiple) {
                 feature.set(input.name, [...input.selectedOptions].map((opt) => opt.value).join(","));
               } else if (input.type === "checkbox") {
@@ -198,8 +192,6 @@ function addLineCalulcations(fileFeatures) {
       feature.set("min_altitude", minAltitude === Infinity ? null : minAltitude.toFixed(2));
       feature.set("max_altitude", maxAltitude === -Infinity ? null : maxAltitude.toFixed(2));
       feature.set("duration", duration !== null ? duration.toFixed(2) : "N/A"); // Hours
-
-      console.log(feature);
     }
   });
 }
@@ -211,7 +203,6 @@ export function createFeatureForm(layerKeys, layerName, config, newInputs) {
     newInputs.appendChild(labelElem);
 
     let inputElem;
-    console.log(config);
 
     const fieldData = config["layers"].find((l) => l.name === layerName)["fields"].find((f) => f.fieldName === name);
 
@@ -258,7 +249,6 @@ export function createFeatureForm(layerKeys, layerName, config, newInputs) {
         inputElem.value = defaultValue; // Set the default value
       }
     }
-    console.log(newInputs);
     newInputs.appendChild(inputElem);
   });
 }

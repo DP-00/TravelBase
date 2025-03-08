@@ -279,27 +279,22 @@ export function parseStyle(styleConfig, feature) {
   console.log("Style Config:", styleConfig);
 
   let styleOptions = {};
-  console.log(styleConfig.width, styleConfig.color, styleConfig.icon);
   if (styleConfig.width) {
     let color =
       typeof styleConfig.color === "string"
         ? evaluateStyleExpression(styleConfig.color, feature)
         : styleConfig.color || "black";
 
-    console.log(color);
     let width =
       typeof styleConfig.width === "string"
         ? evaluateStyleExpression(styleConfig.width, feature)
         : styleConfig.width || 2;
-    console.log(width);
 
     styleOptions.stroke = new ol.style.Stroke({
       color: color,
       width: width,
       lineDash: styleConfig.dashed ? [4, 8] : undefined,
     });
-
-    console.log(styleOptions);
   }
 
   if (styleConfig.radius) {

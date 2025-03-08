@@ -179,7 +179,6 @@ async function loadApp() {
         let vectorSource = layer.getSource();
         let features = vectorSource.getFeatures();
 
-        console.log(layer.get("name"), features);
         features.forEach((feature) => {
           feature.setStyle(parseStyle(layerConfig.style, feature));
         });
@@ -217,8 +216,6 @@ async function loadApp() {
         feature.get("link") != undefined && feature.get("link") !== ""
           ? `<a  target="_blank" href="${feature.get("link").trim()}">Link</a>`
           : "";
-
-      console.log("link html", link);
 
       let profile =
         feature.getGeometry() instanceof ol.geom.LineString
@@ -327,12 +324,10 @@ async function loadApp() {
       let source = layer.getSource();
       if (!source.hasFeature(feature)) return;
 
-      console.log(layer);
       const layerKeys = listPropertiesByLayer(layer.get("name"), config);
 
       layerKeys.forEach((value, key) => {
         let featureValue = feature.get(key) ?? "";
-        console.log(value);
 
         if (value === "Charset" || value === "Number" || value === "Bool" || value === "Date") {
           let type = value === "Number" ? "number" : value === "Date" ? "date" : value === "Bool" ? "checkbox" : "text";
@@ -399,7 +394,6 @@ async function loadApp() {
     }
 
     layerList.forEach(function (layer) {
-      console.log(layer);
       if (!specialLayers.includes(layer.get("name"))) {
         let source = layer.getSource();
 
@@ -468,10 +462,8 @@ async function loadApp() {
 
     profileButton.addEventListener("click", () => {
       if (profil.isShown()) {
-        console.log("shown");
         map.addInteraction(hover);
       } else {
-        console.log("hidden");
         map.removeInteraction(hover);
       }
     });
@@ -530,7 +522,6 @@ async function loadApp() {
   });
   map.addControl(searchPhoton);
   searchPhoton.on("select", function (e) {
-    console.log("select photon");
     map.getView().animate({
       center: e.coordinate,
       zoom: Math.max(map.getView().getZoom(), 15),
@@ -541,7 +532,6 @@ async function loadApp() {
     features: [],
   });
   layerList.forEach((layer) => {
-    console.log(layer);
     if (layer.get("name") != "Basemaps") {
       let features = layer.getSource().getFeatures();
       features.forEach((feature) => {
