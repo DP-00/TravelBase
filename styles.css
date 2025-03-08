@@ -226,8 +226,8 @@ input[type="submit"]:hover,
   position: relative;
   margin: auto;
   border-radius: 5px;
-  width: 20rem;
-  max-height: 20rem;
+  /* width: 20rem; */
+  max-height: 15rem;
 }
 
 .img-pop-up {

@@ -243,10 +243,13 @@ export function layerMenu(map, dbx, layerList, updatedLayers) {
               // Ensure upload was successful
 
               console.log("response");
+              console.log(updatedLayers);
 
               if (updatedLayers.indexOf(layer.get("name")) !== -1) {
                 updatedLayers.splice(updatedLayers.indexOf(layer.get("name")), 1); // Correctly remove the item
               }
+
+              console.log(updatedLayers);
 
               const warningElement = document.getElementById("updateWarning");
               const warningTextElement = document.getElementById("warningText");
@@ -276,7 +279,7 @@ function evaluateStyleExpression(expression, feature) {
 }
 
 export function parseStyle(styleConfig, feature) {
-  console.log("Style Config:", styleConfig);
+  // console.log("Style Config:", styleConfig);
 
   let styleOptions = {};
   if (styleConfig.width) {

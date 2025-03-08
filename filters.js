@@ -250,7 +250,7 @@ function applyFilter(layer, formElem, config) {
     }
   });
 
-  console.log("Processed Filters:", filterValues);
+  // console.log("Processed Filters:", filterValues);
 
   layer
     .getSource()
@@ -304,7 +304,7 @@ function applyFilter(layer, formElem, config) {
         }
       }
 
-      // feature.setStyle(isVisible ? null : new ol.style.Style({}));
+      // feature.sets(isVisible ? null : new ol.style.Style({}));
 
       config.layers.forEach((layerConfig) => {
         if (layer.get("name") === layerConfig.name) {

@@ -144,6 +144,7 @@ async function loadApp() {
     const warningElement = document.getElementById("updateWarning");
     warningElement.style.display = "none";
     updatedLayers = []; // Clear the updated layers array when the warning is closed
+    console.log("updatedLayers", updatedLayers);
   }
 
   // Add event listener to the close button of the warning
@@ -234,6 +235,7 @@ async function loadApp() {
             </div>`;
 
       console.log(popupContent);
+      console.log("feature", feature);
       popup.show(evt.coordinate, popupContent);
 
       document.getElementById("popEdit").onclick = function () {
