@@ -224,10 +224,14 @@ input[type="submit"]:hover,
 
 .ol-popup > img {
   position: relative;
-  margin: auto;
-  border-radius: 5px;
-  width: 15rem;
+  /* margin: auto; */
+  /* border-radius: 5px; */
+  /* width: 20rem; */
   /* max-height: 15rem; */
+
+  margin: 0 auto; /* Centers the image */
+  border-radius: 5px;
+  width: calc(100% - 2rem); /* Ensures 1rem gap on both sides */
 }
 
 .img-pop-up {
@@ -235,9 +239,9 @@ input[type="submit"]:hover,
   z-index: 2;
 }
 
-.ol-imageline > div {
+/* .ol-imageline > div {
   height: 8em;
-}
+} */
 
 /* OL CONTROLS */
 .ol-control button {

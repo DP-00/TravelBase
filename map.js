@@ -142,7 +142,7 @@ async function loadApp() {
   function closeWarning() {
     const warningElement = document.getElementById("updateWarning");
     warningElement.style.display = "none";
-    updatedLayers = []; // Clear the updated layers array when the warning is closed
+    updatedLayers.length = 0; // Clears the array without losing reference
     console.log("updatedLayers", updatedLayers);
   }
 
