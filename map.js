@@ -380,7 +380,7 @@ async function loadApp() {
               .map((option) => option.value)
               .join(", ");
             feature.set(key, options);
-          } else if (value === "Bool") {
+          } else if (editForm[i].type === "checkbox") {
             // Handle checkboxes
             feature.set(key, editForm[i].checked); // Use `checked` instead of `value`
           } else {

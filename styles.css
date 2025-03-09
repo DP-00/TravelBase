@@ -185,7 +185,7 @@ input[type="submit"]:hover,
   background-color: var(--background);
   border-radius: 1rem;
   box-shadow: inset 0px 1px 20px 9px #050e06;
-  padding: 2rem 2rem 4rem 2rem;
+  padding: 1rem 1rem 3rem 1rem;
   user-select: text; /* Allows text selection */
   pointer-events: auto; /* Ensures interaction */
 }
@@ -242,6 +242,7 @@ input[type="submit"]:hover,
   height: auto; /* Maintains aspect ratio */
   object-fit: contain; /* Scales the image without cropping */
   margin: 0 auto; /* Centers the image */
+  width: 20rem;
 }
 
 .img-pop-up {
