@@ -224,7 +224,7 @@ input[type="submit"]:hover,
   padding-bottom: 0.5rem;
 }
 
-.ol-popup > img {
+.ol-popup img {
   position: relative;
   /* margin: auto; */
   /* border-radius: 5px; */
