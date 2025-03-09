@@ -335,7 +335,9 @@ async function loadApp() {
 
         if (value === "Charset" || value === "Number" || value === "Bool" || value === "Date") {
           let type = value === "Number" ? "number" : value === "Date" ? "date" : value === "Bool" ? "checkbox" : "text";
-          content += `<p><b>${key}</b>: <input type="${type}" value="${featureValue}"></p>`;
+          let checkedAttr = value === "Bool" && featureValue === true ? "checked" : ""; // ✅ Correctly mark checkbox
+
+          content += `<p><b>${key}</b>: <input type="${type}" value="${featureValue}" ${checkedAttr}></p>`;
         } else if (value === "Select") {
           let options =
             config.layers

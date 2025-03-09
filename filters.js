@@ -112,20 +112,20 @@ export function filterMenu(map, config, layerList) {
           .forEach((feature) => {
             const isVisited = feature.get("isVisited");
             const hasProperty = isVisited !== undefined;
-
-            // Normalize boolean values (in case they are stored as strings)
             const isNotVisited = isVisited === false || isVisited === "false";
 
-            // Hide features that are visited or missing the property
-            // feature.setStyle(hasProperty && isNotVisited ? null : new ol.style.Style({}));
+            // Check if the layer config includes the "isVisited" attribute
+            const layerConfig = config.layers.find((l) => l.name === layer.get("name"));
+            const layerHasIsVisited = layerConfig && layerConfig.fields.some((f) => f.fieldName === "isVisited");
 
-            config.layers.forEach((layerConfig) => {
-              if (layer.get("name") === layerConfig.name) {
-                feature.setStyle(
-                  hasProperty && isNotVisited ? parseStyle(layerConfig.style, feature) : new ol.style.Style({})
-                );
-              }
-            });
+            // Make feature visible if:
+            // 1. isVisited is explicitly false
+            // 2. The layer has isVisited, but the feature doesn't have it
+            // 3. The feature has isVisited but it's null or an empty string
+            const shouldBeVisible =
+              isNotVisited || (layerHasIsVisited && (!hasProperty || isVisited === null || isVisited === ""));
+
+            feature.setStyle(shouldBeVisible ? parseStyle(layerConfig.style, feature) : new ol.style.Style({}));
           });
       }
     });
