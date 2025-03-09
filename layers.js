@@ -270,7 +270,7 @@ function evaluateStyleExpression(expression, feature) {
   try {
     return new Function("feature", `return ${expression};`)(feature);
   } catch (error) {
-    console.error("Error evaluating style expression:", expression, error);
+    console.log("Error evaluating style expression:", expression, error);
     return null;
   }
 }

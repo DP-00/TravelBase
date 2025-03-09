@@ -192,7 +192,7 @@ input[type="submit"]:hover,
 
 .ol-popup-content {
   min-width: 300px;
-  max-width: 25rem;
+  max-width: 20rem;
   max-height: none;
   overflow-wrap: break-word;
   max-width: 100%;
