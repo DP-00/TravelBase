@@ -1,0 +1,2001 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
+    <title>TravelBase3</title>
+    <link rel="icon" href="data:;base64,=" />
+    <style>
+      html,
+      body {
+        background-color: var(--calcite-ui-foreground-2);
+        height: 100%;
+        margin: 0;
+      }
+
+      calcite-panel {
+        padding: 1rem;
+      }
+
+      calcite-combobox {
+        width: 10rem;
+      }
+
+      #popover-content {
+        padding: 1.5rem;
+      }
+
+      calcite-shell,
+      calcite-navigation {
+        overflow: visible;
+      }
+
+      arcgis-daylight {
+        padding: 1rem;
+      }
+
+      arcgis-basemap-gallery {
+        width: 500px;
+      }
+
+      arcgis-feature-table {
+        height: 33vh;
+        width: 66vw;
+      }
+    </style>
+    <!-- Load the ArcGIS Maps SDK for JavaScript from the CDN -->
+    <script type="module" src="https://js.arcgis.com/5.0/"></script>
+    <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
+  </head>
+
+  <body class="calcite-mode-dark">
+    <!-- The Shell component is used as a layout for this template -->
+    <calcite-popover id="popover-links" reference-element="travelbase-logo" label="links" overlay-positioning="fixed" placement="bottom-start" offset-distance="15" offset-skidding="15">
+      <div id="popover-content">
+        <calcite-link icon-start="explore" href="https://pl.mapy.cz/zakladni?x=21.7830684&y=52.1400187&z=8" target="_blank"> Mapy.CZ</calcite-link><br />
+        <calcite-link
+          icon-start="analysis"
+          href="https://map.schweizmobil.ch/?land=wanderland&lang=en&route=113&photos=yes&bgLayer=pk&logo=yes&season=summer&resolution=3.98&E=2546634&N=1148788&detours=yes&layers=Wanderland%2CAccomodation"
+          target="_blank"
+        >
+          Schweiz Mobile </calcite-link
+        ><br />
+        <calcite-link icon-start="partly-cloudy" href="https://www.meteoswiss.admin.ch/local-forecasts/zurich/8001.html#forecast-tab=detail-view" target="_blank"> Swiss Meteo </calcite-link><br />
+        <calcite-link icon-start="bus" href="https://www.sbb.ch/en/buying/pages/fahrplan/fahrplan.xhtml" target="_blank"> SBB </calcite-link><br />
+        <calcite-link icon-start="walking-distance" href="https://swissfamilyfun.com/?post_type=post" target="_blank"> Swiss Family Fun</calcite-link><br />
+        <calcite-link icon-start="home" href="https://www.sac-cas.ch/de/huetten-und-touren/sac-tourenportal/?type=hut&sortField=display_name" target="_blank"> SAC</calcite-link><br />
+        <calcite-link icon-start="snow" href="https://whiterisk.ch/en/conditions/snow-maps/snow_depth" target="_blank"> Snow Cover CH </calcite-link><br />
+        <calcite-link icon-start="drone-flying-wing" href="https://www.inaturalist.org/" target="_blank"> iNaturalist </calcite-link><br />
+        <calcite-link icon-start="drone-flying-wing" href="https://ebird.org/hotspots" target="_blank"> eBird </calcite-link><br />
+        <calcite-link icon-start="drone-flying-wing" href="https://www.birdingplaces.eu/en/find-a-birdingplace#3.71/54.27/16.35" target="_blank"> BirdingPlaces </calcite-link><br />
+        <calcite-link icon-start="drone-flying-wing" href="https://www.vogelwarte.ch/de/voegel-der-schweiz/" target="_blank"> VogelWarte </calcite-link><br />
+      </div>
+    </calcite-popover>
+    <calcite-shell>
+      <calcite-navigation slot="header">
+        <calcite-action id="travelbase-logo" slot="content-start" icon="map-pin" scale="l" text="TravelBase" text-enabled></calcite-action>
+        <!-- <calcite-navigation-logo id="travelbase-logo" heading="TravelBase" icon="map-pin" alt="Application logo" slot="logo"> </calcite-navigation-logo> -->
+        <calcite-chip-group id="modes" selection-mode="single" slot="content-center">
+          <calcite-chip value="Archive">Archive</calcite-chip>
+          <calcite-chip value="NOW"> NOW </calcite-chip>
+          <calcite-chip value="Plans">Plans</calcite-chip>
+        </calcite-chip-group>
+        <calcite-combobox id="trip-filter" placeholder="Trips" overlay-positioning="fixed" selection-display="fit" slot="content-start" scale="s"> </calcite-combobox>
+        <calcite-action slot="content-end" icon="save" scale="l" text="Choose location"></calcite-action>
+        <!-- <calcite-tooltip open reference-element="travelbase-logo" label="links" overlay-positioning="fixed" placement="bottom-start" closable> -->
+      </calcite-navigation>
+
+      <arcgis-scene id="scene-div" basemap="dark-gray" ground="world-elevation" zoom="8" center="8.3,46.8">
+        <arcgis-zoom slot="top-left"></arcgis-zoom>
+        <arcgis-navigation-toggle slot="top-left"></arcgis-navigation-toggle>
+        <arcgis-compass slot="top-left"></arcgis-compass>
+        <div slot="top-left">
+          <arcgis-track></arcgis-track>
+          <arcgis-home></arcgis-home>
+          <arcgis-expand auto-collapse>
+            <arcgis-bookmarks drag-enabled show-add-bookmark-button show-edit-bookmark-button></arcgis-bookmarks>
+          </arcgis-expand>
+          <arcgis-expand auto-collapse>
+            <arcgis-search></arcgis-search>
+          </arcgis-expand>
+        </div>
+        <div slot="top-left">
+          <arcgis-expand auto-collapse>
+            <arcgis-basemap-gallery></arcgis-basemap-gallery>
+          </arcgis-expand>
+          <arcgis-expand auto-collapse expand-icon="layer-basemap">
+            <arcgis-layer-list id="thematic-layers"></arcgis-layer-list>
+          </arcgis-expand>
+          <arcgis-expand auto-collapse>
+            <arcgis-daylight></arcgis-daylight>
+          </arcgis-expand>
+        </div>
+        <arcgis-expand slot="bottom-left" expanded>
+          <arcgis-layer-list id="main-layers" reference-element="scene-div"></arcgis-layer-list>
+        </arcgis-expand>
+        <arcgis-popup slot="popup" hide-feature-navigation></arcgis-popup>
+        <arcgis-editor slot="bottom-right" id="editor" reference-element="scene-div" hidden></arcgis-editor>
+        <arcgis-editor slot="bottom-right" id="editor-add" reference-element="scene-div" hidden></arcgis-editor>
+        <arcgis-feature-table slot="bottom-right" id="attributes-table" reference-element="scene-div" hidden editing-enabled sync-view-selection></arcgis-feature-table>
+        <arcgis-elevation-profile slot="bottom-right" reference-element="scene-div" hidden></arcgis-elevation-profile>
+      </arcgis-scene>
+    </calcite-shell>
+    <div id="myDiv">test</div>
+
+    <calcite-dialog id="file-import-dialog">
+      <span slot="title">Import features from file</span>
+      <div id="file-import-dialog-content">
+        <calcite-label layout="inline">
+          Select GeoJSON or GPX file
+          <input id="file-import-input" type="file" accept=".geojson,.json,.gpx" />
+        </calcite-label>
+        <div id="file-import-mapping" style="margin-top: 1rem; display: grid; gap: 0.75rem"></div>
+      </div>
+      <calcite-button slot="footer-end" id="file-import-cancel" appearance="outline">Cancel</calcite-button>
+      <calcite-button slot="footer-end" id="file-import-confirm" appearance="solid" disabled>Import</calcite-button>
+    </calcite-dialog>
+  </body>
+
+  <script type="module">
+    const Bookmark = await $arcgis.import("@arcgis/core/webmap/Bookmark.js");
+    const Graphic = await $arcgis.import("@arcgis/core/Graphic.js");
+    const Point = await $arcgis.import("@arcgis/core/geometry/Point.js");
+    const SimpleMarkerSymbol = await $arcgis.import("@arcgis/core/symbols/SimpleMarkerSymbol.js");
+    const SimpleLineSymbol = await $arcgis.import("@arcgis/core/symbols/SimpleLineSymbol.js");
+    const Portal = await $arcgis.import("@arcgis/core/portal/Portal.js");
+    const Basemap = await $arcgis.import("@arcgis/core/Basemap.js");
+    const VectorTileLayer = await $arcgis.import("@arcgis/core/layers/VectorTileLayer.js");
+    const TileLayer = await $arcgis.import("@arcgis/core/layers/TileLayer.js");
+    const ImageryTileLayer = await $arcgis.import("@arcgis/core/layers/ImageryTileLayer.js");
+    const ImageryLayer = await $arcgis.import("@arcgis/core/layers/ImageryLayer.js");
+    const LocalBasemapsSource = await $arcgis.import("@arcgis/core/widgets/BasemapGallery/support/LocalBasemapsSource.js");
+    const WebTileLayer = await $arcgis.import("@arcgis/core/layers/WebTileLayer.js");
+    const WMSLayer = await $arcgis.import("@arcgis/core/layers/WMSLayer.js");
+    const WMTSLayer = await $arcgis.import("@arcgis/core/layers/WMTSLayer.js");
+    const FeatureLayer = await $arcgis.import("@arcgis/core/layers/FeatureLayer.js");
+    const GeoJSONLayer = await $arcgis.import("@arcgis/core/layers/GeoJSONLayer.js");
+    const geometryEngine = await $arcgis.import("@arcgis/core/geometry/geometryEngine.js");
+    const webMercatorUtils = await $arcgis.import("@arcgis/core/geometry/support/webMercatorUtils.js");
+    const rasterFunctionUtils = await $arcgis.import("@arcgis/core/layers/support/rasterFunctionUtils.js");
+    const reactiveUtils = await $arcgis.import("@arcgis/core/core/reactiveUtils.js");
+    const viewElement = document.querySelector("arcgis-scene");
+
+    // const REDIRECT_URI = `${window.location.origin}/Travelbase/`; //"http://localhost:8000/";
+    const REDIRECT_URI = "http://localhost:8000/travelbaseV3.html"; //"http://localhost:8000/";
+    const CLIENT_ID = "2h95rnvy2dubcsw"; // <-- your client id
+    let dbxAuth = new Dropbox.DropboxAuth({ clientId: CLIENT_ID });
+    let dbx = new Dropbox.Dropbox({ auth: dbxAuth });
+
+    let initialized = false;
+    let fileImporter = null;
+    const layerFilters = {};
+    const globalFilters = {
+      trips: null,
+      mode: null,
+    };
+
+    const setup = async () => {
+      // const config = await loadConfig();
+      let config = await fetchDropboxFile("config.json");
+
+      if (initialized || !viewElement?.view) return;
+      initialized = true;
+      viewElement.view.effects = {
+        glow: {
+          enabled: true,
+          intensity: 3,
+        },
+      };
+
+      setupBookmarks();
+      setupBasemaps();
+      setupThematicLayers(viewElement);
+      setupThematicLayerList(viewElement);
+      await setupMainLayers(viewElement, config);
+      await setupMainLayerList(viewElement);
+      await setupSearch();
+      await setupPopup(viewElement);
+      await setupTripFilter(viewElement, config);
+      fileImporter = await setupFileImport(); // to fix
+
+      // FILTERS
+      const modesEl = document.getElementById("modes");
+
+      modesEl.addEventListener("calciteChipGroupSelect", () => {
+        const selected = modesEl.selectedItems;
+
+        if (!selected.length) {
+          globalFilters.mode = null; // ✅ remove filter
+        } else {
+          globalFilters.mode = selected[0].value;
+        }
+
+        viewElement.map.layers.forEach(applyFilters);
+      });
+
+      // EDITOR
+
+      const editorComponent = document.querySelector("arcgis-editor");
+      const editorAddComponent = document.getElementById("editor-add");
+      const popupComponent = document.querySelector("arcgis-popup");
+      let popupFeatures = null;
+      let creatingLayer = null;
+
+      // Watch editor-add state for visibility control
+      reactiveUtils.watch(
+        () => editorAddComponent?.state,
+        (state) => {
+          if (state === "ready" || state === "disabled" || state === null) {
+            editorAddComponent.hidden = true;
+          }
+        },
+      );
+
+      reactiveUtils.when(
+        () => editorComponent?.state === "ready",
+        () => {
+          let creatingLayer = null;
+          if (creatingLayer) {
+            creatingLayer = null;
+            // Don't cancel workflow for create operations - let user continue or cancel manually
+            editorComponent.hidden = true;
+          } else {
+            if (popupFeatures) {
+              popupComponent.features = popupFeatures;
+            }
+            popupComponent.setFocus?.();
+            popupComponent.open = true;
+            editorComponent.hidden = true;
+            editorComponent.cancelWorkflow?.();
+          }
+        },
+      );
+    };
+
+    // viewElement.addEventListener("arcgisViewReadyChange", setup);
+    // await setup();
+    window.onload = async function () {
+      dbxAuth = new Dropbox.DropboxAuth({ clientId: CLIENT_ID });
+
+      if (!hasRedirectedFromAuth()) {
+        doAuth();
+        return;
+      }
+
+      try {
+        dbxAuth.setCodeVerifier(window.sessionStorage.getItem("codeVerifier"));
+
+        const tokenResponse = await dbxAuth.getAccessTokenFromCode(REDIRECT_URI, getCodeFromUrl());
+
+        dbxAuth.setAccessToken(tokenResponse.result.access_token);
+
+        dbx = new Dropbox.Dropbox({ auth: dbxAuth });
+        viewElement.addEventListener("arcgisViewReadyChange", setup);
+        await setup();
+      } catch (error) {
+        console.error("Auth error:", error);
+      }
+    };
+
+    // =========================
+    function setupBookmarks() {
+      const bookmarksElement = document.querySelector("arcgis-bookmarks");
+      bookmarksElement.bookmarks = [
+        new Bookmark({
+          name: "World",
+          viewpoint: {
+            targetGeometry: {
+              type: "extent",
+              spatialReference: {
+                wkid: 4326, // WGS 84
+              },
+              xmin: -180,
+              ymin: -90,
+              xmax: 180,
+              ymax: 90,
+            },
+          },
+        }),
+        new Bookmark({
+          name: "Europe",
+          viewpoint: {
+            targetGeometry: {
+              type: "extent",
+              spatialReference: {
+                wkid: 4326, // WGS 84
+              },
+              xmin: -25,
+              ymin: 34,
+              xmax: 45,
+              ymax: 72,
+            },
+          },
+        }),
+        new Bookmark({
+          name: "Switzerland",
+          viewpoint: {
+            targetGeometry: {
+              type: "extent",
+              spatialReference: {
+                wkid: 4326, // WGS 84
+              },
+              xmin: 5.8,
+              ymin: 45.8,
+              xmax: 10.7,
+              ymax: 47.9,
+            },
+          },
+        }),
+      ];
+    }
+    function setupBasemaps() {
+      const standardBasemaps = [Basemap.fromId("dark-gray"), Basemap.fromId("osm"), Basemap.fromId("osm-3d"), Basemap.fromId("topo"), Basemap.fromId("topo-3d"), Basemap.fromId("oceans"), Basemap.fromId("hybrid"), Basemap.fromId("satellite")];
+      const customBasemaps = [
+        new Basemap({
+          baseLayers: [
+            new TileLayer({
+              portalItem: {
+                id: "a66bfb7dd3b14228bf7ba42b138fe2ea",
+              },
+            }),
+          ],
+          title: "Dark Imagery",
+          id: "firefly",
+        }),
+        new Basemap({
+          baseLayers: [
+            new TileLayer({
+              portalItem: {
+                id: "a8588e0401e246469260f03ee44d69f1",
+              },
+            }),
+          ],
+          title: "Vintage Shaded Relief ",
+          id: "vintage",
+        }),
+        new Basemap({
+          title: "Outline",
+          baseLayers: [
+            new VectorTileLayer({
+              portalItem: {
+                id: "ba99a4a4f5ce48debbeca6713e051f1e",
+              },
+            }),
+          ],
+        }),
+        new Basemap({
+          title: "Blueprint",
+          baseLayers: [
+            new VectorTileLayer({
+              portalItem: {
+                id: "b426a8073b8c4a418d1b73ecbc40a0c2",
+              },
+            }),
+          ],
+        }),
+        new Basemap({
+          title: "World Hillshade",
+          baseLayers: [
+            new TileLayer({
+              portalItem: {
+                id: "1b243539f4514b6ba35e7d995890db1d",
+              },
+            }),
+          ],
+        }),
+        new Basemap({
+          title: "World Hillshade (Dark)",
+          baseLayers: [
+            new TileLayer({
+              portalItem: {
+                id: "428539ef9cab4017b69d15a40a9ee98b",
+              },
+            }),
+          ],
+        }),
+        new Basemap({
+          title: "Plain Elevation",
+          baseLayers: [
+            new ImageryTileLayer({
+              url: "https://elevation3d.arcgis.com/arcgis/rest/services/" + "WorldElevation3D/Terrain3D/ImageServer",
+            }),
+          ],
+        }),
+      ];
+      customBasemaps.forEach((basemap) => {
+        const layer = basemap.baseLayers.getItemAt(0);
+        layer?.load?.().then(() => {
+          const thumb = layer?.portalItem?.thumbnailUrl;
+          if (thumb) basemap.thumbnailUrl = thumb;
+        });
+      });
+      const webBasemapIds = [
+        "d3b04b4e7a844d1e85ce07a67a6d8f86", // OSM with relief
+        "539985c0e9c743b39aaeb280654ba4b0", // OSM topographic
+        "7378ae8b471940cb9f9d114b67cd09b8", // World Basemap (Vector)
+        "2e8a3ccdfd6d42a995b79812b3b0ebc6", // Outdoor
+        "a69f14ea2e784e019f4a4b6835ffd376", // Environment
+        "f33a34de3a294590ab48f246e99958c9", // National Geographic
+        "21812b28afea4091bc57472297aa73d4", // Watercolour
+        "826498a48bd0424f9c9315214f2165d4", // Colored Pencil
+        "f35ef07c9ed24020aadd65c8a65d3754", // Modern Antique
+        "75a3ce8990674a5ebd5b9ab66bdab893", // Newspaper
+        "8d91bd39e873417ea21673e0fee87604", // Nova
+        "d92d38b812da4a0884e47e68c57ac451", // Earth at night
+      ];
+      const portal = new Portal({
+        url: "https://www.arcgis.com",
+      });
+      const webBasemaps = webBasemapIds.map(
+        (id) =>
+          new Basemap({
+            portalItem: {
+              id,
+              portal,
+            },
+          }),
+      );
+      const allBasemaps = [...standardBasemaps, ...customBasemaps, ...webBasemaps];
+      document.querySelector("arcgis-basemap-gallery").source = new LocalBasemapsSource({
+        basemaps: allBasemaps,
+      });
+    }
+    function setupThematicLayers(viewElement) {
+      const footprintLayer = new TileLayer({
+        portalItem: {
+          id: "cfe002c152204bd8b6e392f3f39f2878",
+        },
+        id: "TL_Human_Footprint",
+        title: "Human Footprint",
+        visible: false,
+      });
+      const canopyLayer = new ImageryTileLayer({
+        portalItem: {
+          id: "2a3dfb00c2c6425f85bd70da420d58eb",
+        },
+        id: "TL_Forest_Canopy_Height",
+        title: "Forest Canopy Height",
+        visible: false,
+      });
+      const biointactnessLayer = new ImageryTileLayer({
+        portalItem: {
+          id: "25543641e4ce461baa2b7863dc0f80b7",
+        },
+        id: "TL_Biodiversity_Intactness",
+        title: "Biodiversity Intactness",
+        visible: false,
+      });
+      const landCoverLayer = new ImageryLayer({
+        url: "https://ic.imagery1.arcgis.com/arcgis/rest/services/Sentinel2_10m_LandCover/ImageServer",
+        id: "TL_Land_Cover",
+        title: "Land Cover",
+        visible: false,
+      });
+      const ecosystemLayer = new ImageryLayer({
+        portalItem: {
+          id: "926a206393ec40a590d8caf29ae9a93e",
+        },
+        id: "TL_Ecosystems",
+        title: "Ecosystems",
+        visible: false,
+      });
+      const ndviLayer = new ImageryLayer({
+        portalItem: {
+          id: "f6bb66f1c11e467f9a9a859343e27cf8",
+        },
+        id: "TL_NDVI",
+        title: "NDVI",
+        visible: false,
+      });
+
+      const swissParksLayer = new FeatureLayer({
+        portalItem: {
+          id: "40e8a5d24b02474b901b35870d0101b5",
+        },
+        id: "TL_Swiss_National_Parks",
+        title: "Swiss National Parks",
+        visible: false,
+      });
+      const protectedAreasLayer = new VectorTileLayer({
+        id: "TL_Protected_Areas",
+        title: "Protected areas",
+        opacity: 0.7,
+        visible: false,
+        style: {
+          layers: [
+            {
+              id: "WDPA_poly_Latest",
+              type: "fill",
+              source: "WDPA_World_Database_of_Protected_Areas_VTS",
+              "source-layer": "WDPA_poly_Latest",
+              layout: {},
+              paint: {
+                "fill-color": "#71a970",
+                "fill-outline-color": "#3d5c3d",
+              },
+            },
+          ],
+          glyphs: "https://basemaps.arcgis.com/arcgis/rest/services/World_Basemap_v2/VectorTileServer/resources/fonts/{fontstack}/{range}.pbf",
+          version: 8,
+          sprite: "https://www.arcgis.com/sharing/rest/content/items/7675d44bb1e4428aa2c30a9b68f97822/resources/sprites/sprite",
+          sources: {
+            WDPA_World_Database_of_Protected_Areas_VTS: {
+              url: "https://vectortileservices5.arcgis.com/Mj0hjvkNtV7NRhA7/arcgis/rest/services/WDPA_World_Database_of_Protected_Areas_VTS/VectorTileServer",
+              type: "vector",
+            },
+          },
+        },
+      });
+
+      const swissTopo = new WebTileLayer({
+        urlTemplate: "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg",
+        id: "TL_swisstopo",
+        title: "swisstopo",
+
+        visible: false,
+      });
+
+      // only in LV95, so not usable
+      // const snowLayer = new WMSLayer({
+      //   url: "https://wms.geo.admin.ch/",
+      //   sublayers: [
+      //     {
+      //       name: "ch.slf.snowdepth",
+      //       title: "CH Snow depth",
+      //       id: "TL_snowdepth",
+      //     },
+      //     {
+      //       name: "ch.slf.snowdepth-latest",
+      //       title: "CH Snow depth (latest)",
+      //       id: "TL_snowdepth_latest",
+      //     },
+      //   ],
+      //   id: "TL_swisstopo",
+      //   title: "swisstopo",
+
+      //   visible: false,
+      // });
+
+      const swissTopoHikingLayer = new WMSLayer({
+        url: "https://wms.geo.admin.ch/",
+        id: "TL_swisstopo_Hiking_Trails",
+        title: "swisstopo Hiking Trails",
+        sublayers: [
+          {
+            name: "ch.swisstopo.swisstlm3d-wanderwege",
+            // ch.bafu.wildruhezonen
+            // ch.bafu.bundesinventare-vogelreservate
+            title: "Hiking trails",
+            id: "TL_Hiking_Trails",
+          },
+        ],
+        opacity: 0.9,
+        visible: false,
+      });
+      const iNaturalistLayer = new FeatureLayer({
+        portalItem: {
+          id: "99e3e9ccfaec422db6d4266569aa19d7",
+        },
+        id: "TL_iNaturalist",
+        title: "iNaturalist",
+        visible: false,
+      });
+
+      const slope = rasterFunctionUtils.slope({
+        slopeType: "degree",
+        zFactor: 1,
+      });
+      const remapSlope = rasterFunctionUtils.remap({
+        rangeMaps: [
+          {
+            range: [30, 35],
+            output: 30,
+          },
+          {
+            range: [35, 40],
+            output: 35,
+          },
+          {
+            range: [40, 45],
+            output: 40,
+          },
+          {
+            range: [45, 90],
+            output: 45,
+          },
+        ],
+        outputPixelType: "u8",
+        raster: slope,
+      });
+      const colorMapSlope = rasterFunctionUtils.colormap({
+        colormap: [
+          [30, 255, 255, 0],
+          [35, 255, 165, 0],
+          [40, 255, 0, 0],
+          [45, 128, 0, 128],
+        ],
+        raster: remapSlope,
+      });
+      const slopeLayer = new ImageryTileLayer({
+        url: "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer",
+        id: "TL_Slope",
+        title: "Slope (°)",
+        rasterFunction: colorMapSlope,
+        visible: false,
+      });
+      const DEMLayer = new ImageryTileLayer({
+        url: "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer",
+        id: "TL_Elevation",
+        title: "Elevation (m a.s.l.)",
+        rasterFunction: rasterFunctionUtils.colormap({
+          colorRampName: "elevation1",
+        }),
+        opacity: 0.7,
+        visible: false,
+      });
+      const testLayer = new FeatureLayer({
+        url: "https://services2.arcgis.com/cFEFS0EWrhfDeVw9/arcgis/rest/services/SwissNationalParkHikingTrails/FeatureServer/0",
+        title: "test",
+        visible: false,
+      });
+
+      //     .queryFeatures({
+      // outFields: ["*"],
+      // where: "1=1",
+      // returnGeometry: true,
+      // outSpatialReference: {
+      //   wkid: 4326,
+      // }
+
+      const transportLayer = new FeatureLayer({
+        portalItem: {
+          id: "bd16f5a9ce574a14b5a68b65397b466e",
+        },
+        id: "TL_Transport_Stops",
+        title: "Transport stops",
+        visible: false,
+      });
+      const openRailwayMap = new WebTileLayer({
+        urlTemplate: "https://tiles.openrailwaymap.org/standard/{level}/{col}/{row}.png",
+        id: "TL_OpenRailwayMap",
+        title: "OpenRailwayMap",
+        attribution: "© OpenStreetMap contributors | OpenRailwayMap (CC-BY-SA 2.0)",
+        visible: false,
+      });
+
+      viewElement.map.addMany([
+        openRailwayMap,
+        transportLayer,
+        swissTopo,
+        canopyLayer,
+        biointactnessLayer,
+        landCoverLayer,
+        ecosystemLayer,
+        ndviLayer,
+        swissParksLayer,
+        protectedAreasLayer,
+        swissTopoHikingLayer,
+        slopeLayer,
+        DEMLayer,
+        iNaturalistLayer,
+        testLayer,
+      ]);
+    }
+    function setupThematicLayerList(viewElement) {
+      const isThematicItem = (item) => {
+        const id = (item.layer?.id || item.id || item.title || "").toString().toLowerCase();
+        return id.startsWith("tl_");
+      };
+
+      const thematicLayerListEl = document.getElementById("thematic-layers");
+      thematicLayerListEl.filterPredicate = (item) => {
+        return isThematicItem(item);
+      };
+
+      thematicLayerListEl.listItemCreatedFunction = (event) => {
+        const item = event.item;
+        if (item.layer?.legendEnabled) {
+          item.panel = {
+            content: "legend",
+            open: false,
+          };
+        }
+
+        item.actionsSections = [
+          [
+            {
+              id: "zoom-to-layer",
+              title: "Zoom to layer",
+              icon: "magnifying-glass-plus",
+            },
+          ],
+        ];
+      };
+      thematicLayerListEl.addEventListener("arcgisTriggerAction", async (event) => {
+        const { action, item } = event.detail;
+        if (action.id !== "zoom-to-layer") return;
+        const layer = item.layer;
+        await layer.load();
+        if (layer.fullExtent) {
+          viewElement.goTo(layer.fullExtent.expand(1.2));
+        }
+      });
+    }
+
+    async function setupMainLayers(viewElement, config) {
+      const layers = [];
+
+      for (const layerConfig of config.layers) {
+        const geojson = await fetchDropboxGeoJSON(layerConfig.name);
+        if (!geojson) {
+          console.warn(`Skipping ${layerConfig.name} (no GeoJSON found)`);
+          continue;
+        }
+        // const url = `data/${layerConfig.name}.geojson`;
+
+        // ✅ Check if file exists
+        // try {
+        //   const res = await fetch(url, { method: "HEAD" });
+        //   if (!res.ok) {
+        //     console.warn(`Skipping ${layerConfig.name} (no GeoJSON found)`);
+        //     continue;
+        //   }
+        // } catch (err) {
+        //   console.warn(`Error checking ${layerConfig.name}`, err);
+        //   continue;
+        // }
+
+        const layer = new GeoJSONLayer({
+          // url,
+          source: geojson,
+          title: layerConfig.name,
+          id: layerConfig.name,
+          editingEnabled: true,
+          visible: layerConfig.visible || false,
+          fields: layerConfig.fields,
+          geometryType: layerConfig.geometryType,
+          elevationInfo: { mode: "on-the-ground" },
+        });
+
+        if (layerConfig.renderer) {
+          layer.renderer = buildRenderer(layerConfig);
+        }
+
+        layer.load().then(() => {
+          layer.popupTemplate = setupPopupTemplate(layer);
+          addEditorLayerInfo(layer, true);
+        });
+
+        layers.push(layer);
+      }
+
+      viewElement.map.addMany(layers);
+    }
+
+    async function setupMainLayerList(viewElement) {
+      const isThematicItem = (item) => {
+        const id = (item.layer?.id || item.id || item.title || "").toString().toLowerCase();
+        return id.startsWith("tl_");
+      };
+
+      const isSwissHikingItem = (item) => {
+        const title = (item.layer?.title || item.title || "").toString().toLowerCase();
+        const id = (item.layer?.id || item.id || item.sublayer?.id || item.sublayer?.name || item.sublayer?.title || "").toString().toLowerCase();
+        const url = (item.layer?.url || "").toString().toLowerCase();
+        return (
+          title.includes("swisstopo") ||
+          title.includes("hiking trails") ||
+          id.includes("swisstlm3d-wanderwege") ||
+          id.includes("swisstopo") ||
+          id.includes("tl_swisstopo_hiking_trails") ||
+          id.includes("tl_hiking_trails") ||
+          url.includes("wms.geo.admin.ch")
+        );
+      };
+
+      const mainLayerListEl = document.getElementById("main-layers");
+      mainLayerListEl.filterPredicate = (item) => {
+        return !isThematicItem(item) && !isSwissHikingItem(item);
+      };
+      const attributesTable = document.getElementById("attributes-table");
+      mainLayerListEl.listItemCreatedFunction = async (event) => {
+        const item = event.item;
+        const container = document.createElement("myDiv");
+
+        await setupLayerFilter(item.layer, container);
+
+        item.panel = {
+          content: container,
+          icon: "filter",
+          open: false,
+          // open: item.visible,
+        };
+
+        item.actionsSections = [
+          [
+            {
+              id: "add-features",
+              title: "Add features",
+              icon: "plus",
+            },
+            {
+              id: "add-from-file",
+              title: "Add from file",
+              icon: "file-gpx",
+            },
+            {
+              id: "open-attributes",
+              title: "Attribute table",
+              icon: "table",
+            },
+            {
+              id: "zoom-to-layer",
+              title: "Zoom to layer",
+              icon: "magnifying-glass-plus",
+            },
+          ],
+        ];
+      };
+
+      mainLayerListEl.addEventListener("arcgisTriggerAction", async (event) => {
+        const { action, item } = event.detail;
+        const layer = item.layer;
+        if (!layer) return;
+
+        if (action.id === "add-features") {
+          // startAddWorkflow(layer);
+          const editorAddComponent = document.getElementById("editor-add");
+          editorAddComponent.hidden = !editorAddComponent.hidden;
+          return;
+        }
+        if (action.id === "add-from-file") {
+          fileImporter?.openFileImportDialog(layer);
+          return;
+        }
+        if (action.id === "zoom-to-layer") {
+          await layer.load();
+          if (layer.fullExtent) {
+            viewElement.goTo(layer.fullExtent.expand(1.2));
+          }
+          return;
+        }
+        if (action.id === "open-attributes") {
+          if (!layer.type || !layer.fields) {
+            console.warn("Layer has no attributes:", layer.title);
+            return;
+          }
+          attributesTable.layer = layer;
+          attributesTable.hidden = !attributesTable.hidden;
+          attributesTable.actionColumnConfig = {
+            label: "Go to feature",
+            icon: "zoom-to-object",
+            callback: (event) => viewElement.goTo(event.feature),
+          };
+        }
+      });
+    }
+    async function setupSearch() {
+      const searchComponent = document.querySelector("arcgis-search");
+      if (!searchComponent || !viewElement?.map) return;
+
+      const isSearchableLayer = (layer) => {
+        const id = (layer.id || layer.title || "").toString().toLowerCase();
+        if (id.startsWith("tl_")) {
+          return false;
+        }
+
+        if (typeof layer.queryFeatures !== "function") {
+          return false;
+        }
+
+        const fields = layer.fields;
+        if (!fields || !fields.length) {
+          return true;
+        }
+
+        return fields.some((field) => (field.name || "").toString().toLowerCase() === "name");
+      };
+
+      const layers = viewElement.map.allLayers.toArray().filter(isSearchableLayer);
+
+      searchComponent.sources = layers.map((layer) => ({
+        layer,
+        searchFields: ["name"],
+        displayField: "name",
+        exactMatch: false,
+        outFields: ["*"],
+        name: layer.title || layer.id || "Layer",
+      }));
+    }
+    function setupPopupTemplate(layer) {
+      const content = [];
+      const fields = layer.fields || [];
+      const fieldNames = fields.map((field) => field.name.toLowerCase());
+
+      if (fieldNames.includes("img")) {
+        content.push({
+          type: "text",
+          text: "<div style='margin-bottom:0.75rem'><img src='{img}' style='max-width:100%;height:auto;display:block;' onerror=\"this.style.display='none'\" /></div>",
+        });
+      }
+      if (fieldNames.includes("link")) {
+        content.push({
+          type: "text",
+          text: "<div style='margin-bottom:0.75rem'><a href='{link}' target='_blank' rel='noopener noreferrer'>{link}</a></div>",
+        });
+      }
+
+      const exclude = ["name", "title", "img", "link", "objectid"];
+
+      const fieldInfos = (layer.fields || []).filter((field) => !exclude.includes(field.name.toLowerCase())).map((field) => ({ fieldName: field.name, label: field.alias || field.name }));
+
+      if (fieldInfos.length) {
+        content.push({
+          type: "fields",
+          fieldInfos,
+        });
+      }
+
+      return {
+        title: "{name}",
+        content,
+      };
+    }
+
+    async function setupPopup(viewElement) {
+      const popupComponent = document.querySelector("arcgis-popup");
+      let currentPopupFeature = null;
+
+      viewElement.addEventListener("arcgisViewClick", async (event) => {
+        const view = viewElement.view;
+        const screenPoint = event.detail?.screenPoint || { x: event.detail?.x, y: event.detail?.y };
+        const mapPoint = event.detail?.mapPoint;
+        window.currentPopupLocation = mapPoint;
+        const hit = await view.hitTest(screenPoint);
+
+        const result = hit?.results?.find((r) => r.graphic && r.graphic.attributes);
+        if (!result) {
+          popupComponent.clear();
+          return;
+        }
+
+        let feature = result.graphic;
+        currentPopupFeature = feature;
+        showPopupForFeature(feature, mapPoint);
+      });
+
+      popupComponent.addEventListener("arcgisTriggerAction", (event) => {
+        const actionId = event.detail?.action?.id;
+        if (!currentPopupFeature) {
+          return;
+        }
+        if (actionId === "edit-feature") {
+          editThis();
+          return;
+        }
+        if (actionId === "download-gpx") {
+          downloadGPXForFeature(currentPopupFeature);
+          return;
+        }
+        if (actionId === "show-profile") {
+          const elevationProfile = document.querySelector("arcgis-elevation-profile");
+          elevationProfile.geometry = currentPopupFeature.geometry;
+          elevationProfile.hidden = !elevationProfile.hidden;
+          return;
+        }
+        if (actionId === "share-feature") {
+          const ft = currentPopupFeature.geometry;
+          const pt = ft.type === "point" ? ft : ft.extent.center;
+          const shareUrl = `https://www.google.com/maps/search/?api=1&query=${pt.latitude},${pt.longitude}`;
+          if (shareUrl) window.open(shareUrl, "_blank");
+        }
+      });
+
+      function showPopupForFeature(feature, mapPoint) {
+        if (!feature) {
+          popupComponent.clear();
+          return;
+        }
+        const layer = feature.layer;
+        const attributes = feature.attributes || {};
+        const template = layer?.popupTemplate;
+        const isLine = feature.geometry?.type === "polyline";
+        const actions = [
+          { id: "edit-feature", icon: "pencil" },
+          ...(isLine
+            ? [
+                { id: "show-profile", icon: "altitude" },
+                { id: "download-gpx", icon: "download" },
+              ]
+            : []),
+          { id: "share-feature", icon: "share" },
+        ];
+
+        popupComponent.clear();
+        popupComponent.location = mapPoint;
+        popupComponent.heading = attributes.name;
+        popupComponent.content = template?.content;
+        popupComponent.actions = actions;
+        popupComponent.open = true;
+      }
+    }
+
+    async function setupFileImport() {
+      const fileImportDialog = document.getElementById("file-import-dialog");
+      const fileImportInput = document.getElementById("file-import-input");
+      const fileImportConfirm = document.getElementById("file-import-confirm");
+      const fileImportCancel = document.getElementById("file-import-cancel");
+      const fileImportMapping = document.getElementById("file-import-mapping");
+      let fileImportTargetLayer = null;
+      let fileImportFeatures = [];
+
+      const createOption = (value, label, selected) => {
+        const option = document.createElement("calcite-option");
+        option.value = value;
+        option.textContent = label;
+        if (selected) option.selected = true;
+        return option;
+      };
+
+      const parseGeoJSONFile = async (text) => {
+        const data = JSON.parse(text);
+        const features = [];
+
+        if (data.type === "FeatureCollection") {
+          (data.features || []).forEach((feature) => {
+            features.push(feature);
+          });
+        } else if (data.type === "Feature") {
+          features.push(data);
+        } else if (data.type && data.coordinates) {
+          features.push({ type: "Feature", geometry: data, properties: {} });
+        } else if (Array.isArray(data)) {
+          data.forEach((feature) => features.push(feature));
+        }
+
+        return features.map((feature) => ({
+          geometry: feature.geometry,
+          properties: feature.properties || {},
+        }));
+      };
+
+      const parseGPXFile = async (text) => {
+        const xml = new DOMParser().parseFromString(text, "application/xml");
+        const tracks = Array.from(xml.getElementsByTagName("trk"));
+        const features = [];
+
+        tracks.forEach((track) => {
+          const trackName = track.getElementsByTagName("name")[0]?.textContent || "Track";
+          const segments = Array.from(track.getElementsByTagName("trkseg"));
+          const paths = segments
+            .map((seg) => {
+              return Array.from(seg.getElementsByTagName("trkpt")).map((pt) => [parseFloat(pt.getAttribute("lon")), parseFloat(pt.getAttribute("lat"))]);
+            })
+            .filter((path) => path.length);
+
+          if (paths.length) {
+            features.push({
+              geometry: {
+                type: "polyline",
+                paths,
+                spatialReference: { wkid: 4326 },
+              },
+              properties: { name: trackName },
+            });
+          }
+        });
+
+        return features;
+      };
+
+      const buildFieldMappingUi = (sourceKeys, layerFields) => {
+        fileImportMapping.innerHTML = "";
+        if (!sourceKeys.length) {
+          fileImportMapping.innerHTML = "<div>No attribute fields were detected in the uploaded file.</div>";
+          return;
+        }
+
+        sourceKeys.forEach((sourceKey, index) => {
+          const fieldRow = document.createElement("div");
+          fieldRow.style.display = "grid";
+          fieldRow.style.gridTemplateColumns = "1fr 1fr";
+          fieldRow.style.gap = "0.5rem";
+
+          const sourceLabel = document.createElement("calcite-label");
+          sourceLabel.textContent = sourceKey;
+          sourceLabel.style.alignSelf = "center";
+
+          const select = document.createElement("calcite-select");
+          select.id = `file-import-map-${index}`;
+          select.dataset.sourceKey = sourceKey;
+
+          select.appendChild(createOption("", "Ignore", !layerFields.some((field) => field.name.toLowerCase() === sourceKey.toLowerCase())));
+          layerFields.forEach((field) => {
+            const selected = field.name.toLowerCase() === sourceKey.toLowerCase();
+            select.appendChild(createOption(field.name, field.name, selected));
+          });
+
+          fieldRow.appendChild(sourceLabel);
+          fieldRow.appendChild(select);
+          fileImportMapping.appendChild(fieldRow);
+        });
+      };
+
+      const updateImportButtonState = () => {
+        if (!fileImportConfirm) return;
+        fileImportConfirm.disabled = !fileImportFeatures.length;
+      };
+
+      const openFileImportDialog = (layer) => {
+        fileImportTargetLayer = layer;
+        fileImportFeatures = [];
+        if (fileImportInput) {
+          fileImportInput.value = "";
+        }
+        if (fileImportMapping) {
+          fileImportMapping.innerHTML = "";
+        }
+        updateImportButtonState();
+        if (fileImportDialog) {
+          fileImportDialog.open = true;
+        }
+      };
+
+      const processFileUpload = async (file) => {
+        const text = await file.text();
+        const name = file.name.toLowerCase();
+        let features = [];
+
+        try {
+          if (name.endsWith(".gpx")) {
+            features = await parseGPXFile(text);
+          } else {
+            features = await parseGeoJSONFile(text);
+          }
+        } catch (error) {
+          fileImportFeatures = [];
+          updateImportButtonState();
+          return;
+        }
+
+        fileImportFeatures = features;
+        if (!features.length) {
+          updateImportButtonState();
+          return;
+        }
+
+        const layerFields = await fileImportTargetLayer
+          .load()
+          .then(() => fileImportTargetLayer.fields || [])
+          .catch(() => []);
+        const sourceKeys = Array.from(new Set(features.flatMap((feature) => Object.keys(feature.properties || {}))));
+
+        console.log(`Imported ${features.length} features from${file.name}`);
+        buildFieldMappingUi(sourceKeys, layerFields);
+        updateImportButtonState();
+      };
+
+      const collectFieldMappings = () => {
+        if (!fileImportMapping) return [];
+        return Array.from(fileImportMapping.querySelectorAll("calcite-select"))
+          .map((select) => ({
+            sourceKey: select.dataset.sourceKey,
+            targetField: select.value,
+          }))
+          .filter((mapping) => mapping.targetField);
+      };
+
+      const applyFeatureAttributes = (feature, mappings) => {
+        const attributes = {};
+        mappings.forEach(({ sourceKey, targetField }) => {
+          if (feature.properties && sourceKey in feature.properties) {
+            attributes[targetField] = feature.properties[sourceKey];
+          }
+        });
+        if (!attributes.name && feature.properties && feature.properties.name) {
+          attributes.name = feature.properties.name;
+        }
+        return attributes;
+      };
+
+      const addGraphicsToLayer = async (layer, graphics) => {
+        await layer.load();
+
+        try {
+          const result = await layer.applyEdits({
+            addFeatures: graphics,
+          });
+
+          if (result.addFeatureResults?.length) {
+            console.log("Added features:", result.addFeatureResults.length);
+          }
+
+          layer.refresh();
+
+          return layer;
+        } catch (err) {
+          console.error("applyEdits failed:", err);
+        }
+      };
+
+      const confirmFileImport = async () => {
+        if (!fileImportTargetLayer || !fileImportFeatures.length) return;
+
+        const mappings = collectFieldMappings();
+        const graphics = fileImportFeatures.map((feature) => {
+          const attributes = applyFeatureAttributes(feature, mappings);
+          return new Graphic({
+            geometry: feature.geometry,
+            attributes,
+          });
+        });
+
+        viewElement.goTo(graphics);
+
+        await addGraphicsToLayer(fileImportTargetLayer, graphics);
+        console.log(`Successfully imported ${graphics.length} features to layer ${fileImportTargetLayer.title || fileImportTargetLayer.id}`);
+        fileImportDialog.open = false;
+      };
+
+      if (fileImportInput) {
+        fileImportInput.addEventListener("change", async (event) => {
+          const file = event.target.files?.[0];
+          if (file) {
+            await processFileUpload(file);
+          }
+        });
+      }
+
+      if (fileImportCancel) {
+        fileImportCancel.addEventListener("click", () => {
+          if (fileImportDialog) {
+            fileImportDialog.open = false;
+          }
+        });
+      }
+
+      if (fileImportConfirm) {
+        fileImportConfirm.addEventListener("click", confirmFileImport);
+      }
+
+      return {
+        openFileImportDialog,
+      };
+    }
+
+    // FILTER
+    function buildFilterExpr({ field, type, values, range, allowNull = true }) {
+      if (!field) return null;
+
+      let expr = null;
+
+      // 🔢 RANGE (numbers, dates)
+      if (range && range.min != null && range.max != null) {
+        expr = `(${field} >= ${range.min} AND ${field} <= ${range.max})`;
+      }
+
+      // 🔘 SINGLE VALUE (boolean / switch)
+      else if (type === "single" && values?.length === 1) {
+        expr = `${field} = ${values[0]}`;
+      }
+
+      // 🔤 MULTI VALUE (strings like season, trips, category)
+      else if (values?.length) {
+        const parts = values.map((v) => `${field} LIKE '%${v}%'`);
+        expr = `(${parts.join(" OR ")})`;
+      }
+
+      if (!expr) return null;
+
+      // ✅ allow NULL values (important!)
+      if (allowNull) {
+        expr = `(${expr} OR ${field} IS NULL)`;
+      }
+
+      return expr;
+    }
+
+    function hasField(layer, fieldName) {
+      return layer.fields?.some((f) => f.name === fieldName);
+    }
+    async function setupTripFilter(viewElement, config) {
+      const trips = config.trips;
+      const combobox = document.getElementById("trip-filter");
+
+      for (const t of trips) {
+        const item = document.createElement("calcite-combobox-item");
+        item.value = t;
+        item.textLabel = t;
+        combobox.appendChild(item);
+      }
+
+      combobox.addEventListener("calciteComboboxChange", () => {
+        const selected = combobox.selectedItems.map((i) => i.value);
+
+        globalFilters.trips = selected.length
+          ? buildFilterExpr({
+              field: "trips",
+              values: selected,
+            })
+          : null;
+
+        viewElement.map.layers.forEach(applyFilters);
+      });
+    }
+    async function setupLayerFilter(layer, container) {
+      container.innerHTML = "";
+
+      // ✅ skip unsupported layers (WMS, group layers, etc.)
+      if (!layer || !layer.fields || !Array.isArray(layer.fields)) {
+        return;
+      }
+
+      await layer.when?.();
+
+      if (!layerFilters[layer.id]) {
+        layerFilters[layer.id] = {};
+      }
+
+      // 🔴 RESET BUTTON
+      const resetBtn = document.createElement("calcite-button");
+      resetBtn.innerText = "Reset filters";
+      resetBtn.width = "full";
+      resetBtn.kind = "danger";
+      resetBtn.appearance = "outline";
+      resetBtn.scale = "s";
+      resetBtn.style.padding = "1rem 0";
+
+      resetBtn.onclick = () => {
+        layerFilters[layer.id] = {};
+        layer.definitionExpression = "1=1";
+        setupLayerFilter(layer, container);
+      };
+
+      container.appendChild(resetBtn);
+
+      // =========================
+      // FIELD LOOP
+      // =========================
+      for (const field of layer.fields) {
+        const name = field.name;
+        const type = field.type?.toLowerCase();
+        const domain = field.domain;
+        const key = name.toLowerCase();
+
+        if (key === "objectid" || key === "__objectid" || key === "trips") continue;
+
+        const label = document.createElement("calcite-label");
+
+        const needsLabel = type !== "string" || domain?.codedValues?.length || key === "name" || key === "season";
+
+        if (needsLabel) {
+          label.textContent = field.alias || name;
+          label.layout = "inline-space-between";
+          label.scale = "s";
+        } else {
+          label.style.display = "block";
+        }
+
+        // =========================
+        // 📅 DATE
+        // =========================
+        if (type === "date") {
+          const picker = document.createElement("calcite-input-date-picker");
+          picker.range = true;
+          picker.scale = "s";
+          picker.style.width = "75%";
+
+          picker.addEventListener("calciteInputDatePickerChange", () => {
+            const v = picker.value;
+
+            if (v?.start && v?.end) {
+              layerFilters[layer.id][name] = buildFilterExpr({
+                field: name,
+                range: {
+                  min: new Date(v.start).getTime(),
+                  max: new Date(v.end).getTime(),
+                },
+              });
+            } else {
+              delete layerFilters[layer.id][name];
+            }
+
+            applyFilters(layer);
+          });
+
+          label.appendChild(picker);
+        }
+
+        // =========================
+        // 🔢 NUMERIC → SLIDER
+        // =========================
+        else if (type === "integer" || type === "double") {
+          const min = domain?.minValue;
+          const max = domain?.maxValue;
+
+          if (min == null || max == null) continue;
+
+          const slider = document.createElement("calcite-slider");
+
+          slider.range = true;
+          slider.min = min;
+          slider.max = max;
+          slider.minValue = min;
+          slider.maxValue = max;
+
+          slider.labelHandles = true;
+          slider.labelTicks = true;
+          slider.scale = "s";
+          slider.style.width = "75%";
+
+          // ✅ default filter
+          layerFilters[layer.id][name] = buildFilterExpr({
+            field: name,
+            range: { min, max },
+          });
+
+          slider.addEventListener("calciteSliderChange", () => {
+            layerFilters[layer.id][name] = buildFilterExpr({
+              field: name,
+              range: {
+                min: slider.minValue,
+                max: slider.maxValue,
+              },
+            });
+
+            applyFilters(layer);
+          });
+
+          label.appendChild(slider);
+        }
+
+        // =========================
+        // 🔘 SMALL INTEGER → SWITCH
+        // =========================
+        else if (type === "small-integer") {
+          const sw = document.createElement("calcite-switch");
+          sw.scale = "s";
+
+          sw.addEventListener("calciteSwitchChange", () => {
+            if (sw.checked) {
+              layerFilters[layer.id][name] = buildFilterExpr({
+                field: name,
+                type: "single",
+                values: [1],
+              });
+            } else {
+              delete layerFilters[layer.id][name];
+            }
+
+            applyFilters(layer);
+          });
+
+          label.appendChild(sw);
+        }
+
+        // =========================
+        // 🔤 STRING WITH DOMAIN → CHIPS
+        // =========================
+        else if (type === "string" && domain?.codedValues?.length) {
+          const chipGroup = document.createElement("calcite-chip-group");
+          chipGroup.selectionMode = "multiple";
+          chipGroup.scale = "s";
+          chipGroup.style.width = "75%";
+          chipGroup.style.padding = "1rem 0";
+
+          const selected = new Set();
+
+          for (const cv of domain.codedValues) {
+            const chip = document.createElement("calcite-chip");
+            chip.value = cv.code;
+            chip.innerText = cv.name;
+
+            chip.onclick = () => {
+              if (selected.has(cv.code)) {
+                selected.delete(cv.code);
+                chip.selected = false;
+              } else {
+                selected.add(cv.code);
+                chip.selected = true;
+              }
+
+              if (selected.size) {
+                layerFilters[layer.id][name] = buildFilterExpr({
+                  field: name,
+                  values: [...selected],
+                });
+              } else {
+                delete layerFilters[layer.id][name];
+              }
+
+              applyFilters(layer);
+            };
+
+            chipGroup.appendChild(chip);
+          }
+
+          label.appendChild(chipGroup);
+        }
+
+        // =========================
+        // 📅 SEASON (custom multi-value)
+        // =========================
+        else if (key === "season") {
+          const chipGroup = document.createElement("calcite-chip-group");
+          chipGroup.selectionMode = "multiple";
+          chipGroup.scale = "s";
+          chipGroup.style.width = "75%";
+
+          const selected = new Set();
+
+          for (let i = 1; i <= 12; i++) {
+            const chip = document.createElement("calcite-chip");
+            chip.value = String(i);
+            chip.innerText = String(i);
+
+            chip.onclick = () => {
+              if (selected.has(chip.value)) {
+                selected.delete(chip.value);
+                chip.selected = false;
+              } else {
+                selected.add(chip.value);
+                chip.selected = true;
+              }
+
+              if (selected.size) {
+                layerFilters[layer.id][name] = buildFilterExpr({
+                  field: name,
+                  values: [...selected],
+                });
+              } else {
+                delete layerFilters[layer.id][name];
+              }
+
+              applyFilters(layer);
+            };
+
+            chipGroup.appendChild(chip);
+          }
+
+          label.appendChild(chipGroup);
+        }
+
+        // =========================
+        // 🔍 NAME INPUT
+        // =========================
+        else if (key === "name") {
+          const input = document.createElement("calcite-input");
+          input.scale = "s";
+
+          input.addEventListener("calciteInputInput", () => {
+            const v = input.value;
+
+            if (v) {
+              layerFilters[layer.id][name] = buildFilterExpr({
+                field: name,
+                values: [v],
+              });
+            } else {
+              delete layerFilters[layer.id][name];
+            }
+
+            applyFilters(layer);
+          });
+
+          label.appendChild(input);
+        } else {
+          continue;
+        }
+
+        container.appendChild(label);
+      }
+    }
+    function applyFilters(layer) {
+      if (!layer || !layer.fields) return;
+
+      const isTL = layer.id?.startsWith("TL_");
+      const parts = [];
+
+      // 🔹 per-layer filters
+      const perLayer = layerFilters[layer.id] || {};
+      for (const expr of Object.values(perLayer)) {
+        if (expr) parts.push(expr);
+      }
+
+      // 🔹 global filters
+      if (!isTL) {
+        if (globalFilters.trips && hasField(layer, "trips")) {
+          parts.push(globalFilters.trips);
+        }
+
+        if (globalFilters.mode) {
+          const modeExpr = buildModeFilter(layer, globalFilters.mode);
+          if (modeExpr) parts.push(modeExpr);
+        }
+      }
+
+      layer.definitionExpression = parts.length ? parts.join(" AND ") : "1=1";
+    }
+    function buildModeFilter(layer, mode) {
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1;
+      const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+
+      const parts = [];
+
+      if (mode === "Archive" && hasField(layer, "isVisited")) {
+        parts.push(
+          buildFilterExpr({
+            field: "isVisited",
+            type: "single",
+            values: [1],
+          }),
+        );
+      }
+
+      if (mode === "NOW") {
+        if (hasField(layer, "isVisited")) {
+          parts.push(
+            buildFilterExpr({
+              field: "isVisited",
+              type: "single",
+              values: [0],
+            }),
+          );
+        }
+
+        if (hasField(layer, "season")) {
+          parts.push(
+            buildFilterExpr({
+              field: "season",
+              values: [currentMonth, nextMonth],
+            }),
+          );
+        }
+      }
+
+      if (mode === "Plans" && hasField(layer, "isVisited")) {
+        parts.push(
+          buildFilterExpr({
+            field: "isVisited",
+            type: "single",
+            values: [0],
+          }),
+        );
+      }
+
+      return parts.filter(Boolean).join(" AND ") || null;
+    }
+    //  UTILS
+    async function loadConfig() {
+      const response = await fetch("./data/config.json");
+      if (!response.ok) {
+        throw new Error("Failed to load config.json");
+      }
+      return await response.json();
+    }
+    function buildRenderer(layerConfig) {
+      const r = layerConfig.renderer;
+
+      if (r.type === "simple") {
+        return {
+          type: "simple",
+          symbol: buildSymbol(layerConfig.geometryType, r.color, r.style),
+        };
+      }
+
+      if (r.type === "unique-value") {
+        return {
+          type: "unique-value",
+          field: r.field,
+          uniqueValueInfos: r.uniqueValueInfos.map((info) => ({
+            value: info.value,
+            symbol: buildSymbol(layerConfig.geometryType, info.color, r.style),
+          })),
+        };
+      }
+    }
+    function buildSymbol(geometryType, color, style) {
+      // ======================
+      // POINT WITH HALO
+      // ======================
+      if (geometryType === "point" && style === "point-halo") {
+        return {
+          type: "point-3d",
+          symbolLayers: [
+            // halo
+            {
+              type: "icon",
+              resource: { primitive: "circle" },
+              size: 8,
+              material: { color: [...color.slice(0, 3), 0.2] },
+            },
+            // core
+            {
+              type: "icon",
+              resource: { primitive: "circle" },
+              size: 3,
+              material: { color },
+            },
+          ],
+        };
+      }
+
+      // ======================
+      // DASHED LINE
+      // ======================
+      if (geometryType === "polyline" && style === "line-dashed") {
+        return {
+          type: "line-3d",
+          symbolLayers: [
+            {
+              type: "line",
+              size: 2,
+              material: { color },
+            },
+          ],
+        };
+      }
+
+      // ======================
+      // WIDE LINE
+      // ======================
+      if (geometryType === "polyline" && style === "line-wide") {
+        return {
+          type: "line-3d",
+          symbolLayers: [
+            {
+              type: "line",
+              size: 4,
+              material: { color },
+            },
+          ],
+        };
+      }
+
+      return null;
+    }
+    async function geojsonToGraphics(url) {
+      const res = await fetch(url);
+      const geojson = await res.json();
+
+      return (geojson.features || [])
+        .map((f, i) => {
+          const geometry = convertGeometry(f.geometry);
+
+          if (!geometry) return null;
+
+          return new Graphic({
+            geometry,
+            attributes: {
+              ObjectID: i,
+              ...f.properties,
+            },
+          });
+        })
+        .filter(Boolean);
+    }
+
+    function convertGeometry(g) {
+      if (!g) return null;
+
+      switch (g.type) {
+        case "Point":
+          return {
+            type: "point",
+            longitude: g.coordinates[0],
+            latitude: g.coordinates[1],
+          };
+
+        case "LineString":
+          return {
+            type: "polyline",
+            paths: [g.coordinates],
+          };
+
+        default:
+          console.warn("Unsupported geometry:", g);
+          return null;
+      }
+    }
+    function buildFields(features) {
+      const sample = features[0]?.attributes || {};
+
+      return Object.entries(sample).map(([name, value]) => ({
+        name,
+        type: inferFieldType(value),
+      }));
+    }
+
+    function inferFieldType(value) {
+      if (value === null || value === undefined) return "string";
+
+      if (typeof value === "number") return Number.isInteger(value) ? "integer" : "double";
+
+      if (typeof value === "boolean") return "small-integer";
+
+      if (typeof value === "string") {
+        // ISO date check
+        const d = Date.parse(value);
+        if (!isNaN(d) && value.match(/^\d{4}-\d{2}-\d{2}/)) {
+          return "date";
+        }
+      }
+
+      return "string";
+    }
+
+    async function editThis() {
+      const editorComponent = document.getElementById("editor");
+      const popupComponent = document.querySelector("arcgis-popup");
+
+      const featureToEdit = popupComponent.selectedFeature;
+
+      if (!editorComponent.activeWorkflow) {
+        editorComponent.view = viewElement.view || editorComponent.view;
+        popupComponent.open = false;
+        editorComponent.hidden = false;
+        try {
+          await editorComponent.startUpdateWorkflowAtFeatureEdit(featureToEdit);
+          popupComponent.open = true;
+        } catch (error) {
+          console.warn("Editor workflow failed:", error);
+          editorComponent.hidden = true;
+          popupComponent.open = true;
+          window.alert(`Unable to start editor workflow: ${error?.message || error}`);
+        }
+      }
+    }
+    async function getOriginalLayerFeature(feature) {
+      if (!feature?.layer || typeof feature.layer.queryFeatures !== "function") {
+        return feature;
+      }
+      const objectIdField = feature.layer.objectIdField;
+      const objectId = objectIdField && feature.attributes ? feature.attributes[objectIdField] : null;
+      if (!objectId) {
+        return feature;
+      }
+      try {
+        const result = await feature.layer.queryFeatures({
+          objectIds: [objectId],
+          outFields: ["*"],
+          returnGeometry: true,
+          returnZ: true,
+          returnM: true,
+        });
+        if (result.features && result.features.length) {
+          const full = result.features[0];
+          full.attributes = { ...feature.attributes, ...full.attributes };
+          return full;
+        }
+      } catch (error) {
+        console.warn("Failed to query full feature geometry:", error);
+      }
+      return feature;
+    }
+
+    async function downloadGPXForFeature(feature) {
+      const originalFeature = await getOriginalLayerFeature(feature);
+      if (!originalFeature || !originalFeature.geometry || originalFeature.geometry.type !== "polyline") {
+        window.alert("GPX export is only available for line features.");
+        return;
+      }
+      const geometry = originalFeature.geometry.spatialReference?.wkid === 4326 ? originalFeature.geometry : webMercatorUtils.webMercatorToGeographic(originalFeature.geometry);
+      const tracks = geometry.paths
+        .map(
+          (path) =>
+            `<trkseg>${path
+              .map((coord) => {
+                const lat = coord[1];
+                const lon = coord[0];
+                const ele = coord.length > 2 && coord[2] != null ? `<ele>${coord[2]}</ele>` : "";
+                return `<trkpt lat="${lat}" lon="${lon}">${ele}</trkpt>`;
+              })
+              .join("")}</trkseg>`,
+        )
+        .join("");
+      const name = originalFeature.attributes?.name || originalFeature.attributes?.title || "Track";
+      const escapedName = `${name}`.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="TravelBase" xmlns="http://www.topografix.com/GPX/1/1">\n<trk><name>${escapedName}</name>${tracks}</trk>\n</gpx>`;
+      const blob = new Blob([gpx], { type: "application/gpx+xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${name.replace(/[^a-zA-Z0-9_-]/g, "_") || "track"}.gpx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    async function startAddWorkflow(layer) {
+      const editorAddComponent = document.getElementById("editor-add");
+
+      editorAddComponent.hidden = false;
+
+      try {
+        editorAddComponent.layerInfos = [
+          {
+            layer,
+            enabled: true,
+            addEnabled: true,
+            updateEnabled: false,
+            deleteEnabled: false,
+            attributeUpdatesEnabled: true,
+            geometryUpdatesEnabled: false,
+          },
+        ];
+
+        await editorAddComponent.startCreateFeaturesWorkflowAtFeatureTypeSelection();
+      } catch (error) {
+        console.warn("Add workflow failed:", error);
+        editorAddComponent.hidden = true;
+        window.alert(`Unable to start add workflow: ${error?.message || error}`);
+      }
+    }
+    function addEditorLayerInfo(layer, addEnabled = false) {
+      const editor = document.getElementById("editor-add");
+
+      const existing = editor.layerInfos ?? [];
+
+      const editInfo = {
+        layer,
+        enabled: true,
+        addEnabled,
+        updateEnabled: true,
+        deleteEnabled: true,
+        attributeUpdatesEnabled: true,
+        geometryUpdatesEnabled: true,
+      };
+
+      editor.layerInfos = [...existing, editInfo];
+    }
+
+    /* =========================
+   DROPBOX
+========================= */
+
+    function getCodeFromUrl() {
+      return new URLSearchParams(window.location.search).get("code");
+    }
+
+    function hasRedirectedFromAuth() {
+      return !!getCodeFromUrl();
+    }
+
+    function doAuth(dbxAuth) {
+      dbxAuth = new Dropbox.DropboxAuth({ clientId: CLIENT_ID });
+
+      dbxAuth
+        .getAuthenticationUrl(REDIRECT_URI, undefined, "code", "offline", undefined, undefined, true)
+        .then((authUrl) => {
+          window.sessionStorage.clear();
+          window.sessionStorage.setItem("codeVerifier", dbxAuth.codeVerifier);
+          window.location.href = authUrl;
+        })
+        .catch(console.error);
+    }
+
+    async function fetchDropboxFile(file) {
+      const pathToFetch = `/${file}`; // All files are at app folder root
+      console.log("Fetching file:", file, "-> path:", pathToFetch);
+
+      try {
+        // List all files in the app folder for debugging
+        const filesList = await dbx.filesListFolder({ path: "" });
+        console.log(
+          "Files in app folder:",
+          filesList.result.entries.map((f) => f.name),
+        );
+
+        const response = await dbx.filesGetTemporaryLink({ path: pathToFetch });
+        const res = await fetch(response.result.link);
+
+        return await res.json();
+      } catch (err) {
+        console.error("Error fetching file:", file, err);
+        return "";
+      }
+    }
+  </script>
+</html>
