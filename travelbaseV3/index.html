@@ -725,12 +725,15 @@
     async function setupMainLayers(viewElement, config) {
       const layers = [];
 
-      for (const layerConfig of config.layers) {
-        const geojson = await fetchDropboxFile(`${layerConfig.name}.geojson`);
-        if (!geojson) {
-          console.warn(`Skipping ${layerConfig.name} (no GeoJSON found)`);
-          continue;
-        }
+     for (const layerConfig of config.layers) {
+        // const geojson = await fetchDropboxFile(`${layerConfig.name}.geojson`);
+        // if (!geojson) {
+        //   console.warn(`Skipping ${layerConfig.name} (no GeoJSON found)`);
+        //   continue;
+        // }
+const path = `/${layerConfig.name}.geojson`;
+        const response = await dbx.filesGetTemporaryLink({ path });
+
         // const url = `data/${layerConfig.name}.geojson`;
 
         // ✅ Check if file exists
@@ -746,6 +749,7 @@
         // }
 
         const layer = new GeoJSONLayer({
+          url: response.result.link,
           // url,
           source: geojson,
           title: layerConfig.name,
