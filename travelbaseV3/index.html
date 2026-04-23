@@ -726,7 +726,7 @@
       const layers = [];
 
       for (const layerConfig of config.layers) {
-        const geojson = await fetchDropboxFile(layerConfig.name);
+        const geojson = await fetchDropboxFile(`${layerConfig.name}.geojson`);
         if (!geojson) {
           console.warn(`Skipping ${layerConfig.name} (no GeoJSON found)`);
           continue;
