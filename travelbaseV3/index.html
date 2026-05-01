@@ -664,7 +664,26 @@
         visible: false,
       });
 
+      const fountainsZurich = new WMSLayer({
+        url: "https://www.ogd.stadt-zuerich.ch/wms/geoportal/Brunnen",
+        id: "TL_WaterZurich",
+        title: "Water Zurich",
+        visible: false,
+        sublayers: [
+          {
+            name: "Brunnen",
+            id: "TL_Brunnen",
+          },
+        ],
+      });
+
+      // const toilets = new GeoJSONLayer({
+      //   url: "https://overpass-api.de/api/interpreter?data=%5Bout:json%5D%5Btimeout:25%5D;(node%5B%22amenity%22=%22toilets%22%5D(45.8,5.9,47.9,10.5);way%5B%22amenity%22=%22toilets%22%5D(45.8,5.9,47.9,10.5););out%20center;&format=geojson",
+      //   title: "Public toilets (OSM)",
+      // });
       viewElement.map.addMany([
+        // toilets,
+        fountainsZurich,
         openRailwayMap,
         transportLayer,
         swissTopo,
