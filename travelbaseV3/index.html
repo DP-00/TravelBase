@@ -4,12 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
     <title>TravelBase3</title>
-    <link rel="manifest" href="manifest.json">
     <link rel="icon" href="data:;base64,=" />
     <style>
+      :root {
+        --calcite-scrim-background: rgba(0, 0, 0, 0.2) !important;
+      }
+
       html,
       body {
         background-color: var(--calcite-ui-foreground-2);
+        --calcite-color-focus: rgb(0, 0, 0, 0.5);
         height: 100%;
         margin: 0;
       }
@@ -18,8 +22,14 @@
         padding: 1rem;
       }
 
-      calcite-combobox {
-        width: 10rem;
+      #modes {
+        width: max-content;
+        padding: 0.5rem;
+      }
+
+      #detail-expand .scrim {
+        background-color: rgba(0, 0, 0, 0.5);
+        --calcite-scrim-background: rgba(0, 0, 0, 0.5);
       }
 
       #popover-content {
@@ -40,8 +50,15 @@
       }
 
       arcgis-feature-table {
-        height: 33vh;
-        width: 66vw;
+        height: 40vh;
+        width: 100%;
+      }
+
+      @media (min-width: 768px) {
+        arcgis-feature-table {
+          height: 33vh;
+          width: 66vw;
+        }
       }
     </style>
     <!-- Load the ArcGIS Maps SDK for JavaScript from the CDN -->
@@ -63,6 +80,7 @@
         ><br />
         <calcite-link icon-start="partly-cloudy" href="https://www.meteoswiss.admin.ch/local-forecasts/zurich/8001.html#forecast-tab=detail-view" target="_blank"> Swiss Meteo </calcite-link><br />
         <calcite-link icon-start="bus" href="https://www.sbb.ch/en/buying/pages/fahrplan/fahrplan.xhtml" target="_blank"> SBB </calcite-link><br />
+        <calcite-link icon-start="bus" href="http://isochrones.ch/" target="_blank"> Isochrones </calcite-link><br />
         <calcite-link icon-start="walking-distance" href="https://swissfamilyfun.com/?post_type=post" target="_blank"> Swiss Family Fun</calcite-link><br />
         <calcite-link icon-start="home" href="https://www.sac-cas.ch/de/huetten-und-touren/sac-tourenportal/?type=hut&sortField=display_name" target="_blank"> SAC</calcite-link><br />
         <calcite-link icon-start="snow" href="https://whiterisk.ch/en/conditions/snow-maps/snow_depth" target="_blank"> Snow Cover CH </calcite-link><br />
@@ -75,53 +93,59 @@
     <calcite-shell>
       <calcite-navigation slot="header">
         <calcite-action id="travelbase-logo" slot="content-start" icon="map-pin" scale="l" text="TravelBase" text-enabled></calcite-action>
-        <!-- <calcite-navigation-logo id="travelbase-logo" heading="TravelBase" icon="map-pin" alt="Application logo" slot="logo"> </calcite-navigation-logo> -->
-        <calcite-chip-group id="modes" selection-mode="single" slot="content-center">
+        <calcite-chip-group id="modes" selection-mode="single" slot="content-center" scale="s">
           <calcite-chip value="Archive">Archive</calcite-chip>
           <calcite-chip value="NOW"> NOW </calcite-chip>
           <calcite-chip value="Plans">Plans</calcite-chip>
         </calcite-chip-group>
-        <calcite-combobox id="trip-filter" placeholder="Trips" overlay-positioning="fixed" selection-display="fit" slot="content-start" scale="s"> </calcite-combobox>
-        <calcite-action slot="content-end" icon="save" scale="l" text="Choose location"></calcite-action>
-        <!-- <calcite-tooltip open reference-element="travelbase-logo" label="links" overlay-positioning="fixed" placement="bottom-start" closable> -->
+        <calcite-combobox id="trip-filter" placeholder="Trips" slot="content-start" scale="s"></calcite-combobox>
+        <calcite-action id="save-action" slot="content-end" icon="download" scale="l"></calcite-action>
       </calcite-navigation>
 
       <arcgis-scene id="scene-div" basemap="dark-gray" ground="world-elevation" zoom="8" center="8.3,46.8">
-        <arcgis-zoom slot="top-left"></arcgis-zoom>
-        <arcgis-navigation-toggle slot="top-left"></arcgis-navigation-toggle>
-        <arcgis-compass slot="top-left"></arcgis-compass>
-        <div slot="top-left">
+        <arcgis-zoom slot="top-right"></arcgis-zoom>
+        <arcgis-navigation-toggle slot="top-right"></arcgis-navigation-toggle>
+        <arcgis-compass slot="top-right"></arcgis-compass>
+        <div slot="top-right">
           <arcgis-track></arcgis-track>
           <arcgis-home></arcgis-home>
-          <arcgis-expand auto-collapse>
+          <arcgis-expand auto-collapse group="top-right">
             <arcgis-bookmarks drag-enabled show-add-bookmark-button show-edit-bookmark-button></arcgis-bookmarks>
           </arcgis-expand>
-          <arcgis-expand auto-collapse>
-            <arcgis-search></arcgis-search>
+          <arcgis-expand auto-collapse group="top-right">
+            <arcgis-search max-results="10"></arcgis-search>
           </arcgis-expand>
         </div>
-        <div slot="top-left">
-          <arcgis-expand auto-collapse>
+        <div slot="top-right">
+          <arcgis-expand auto-collapse group="top-right">
             <arcgis-basemap-gallery></arcgis-basemap-gallery>
           </arcgis-expand>
-          <arcgis-expand auto-collapse expand-icon="layer-basemap">
+          <arcgis-expand auto-collapse expand-icon="layer-basemap" group="top-right">
             <arcgis-layer-list id="thematic-layers"></arcgis-layer-list>
           </arcgis-expand>
-          <arcgis-expand auto-collapse>
+          <arcgis-expand auto-collapse group="top-right">
             <arcgis-daylight></arcgis-daylight>
           </arcgis-expand>
         </div>
-        <arcgis-expand slot="bottom-left" expanded>
-          <arcgis-layer-list id="main-layers" reference-element="scene-div"></arcgis-layer-list>
-        </arcgis-expand>
+
+        <div slot="bottom-right">
+          <arcgis-expand group="bottom-right">
+            <arcgis-layer-list id="main-layers" reference-element="scene-div"></arcgis-layer-list>
+          </arcgis-expand>
+          <arcgis-expand group="bottom-right">
+            <arcgis-editor reference-element="scene-div"></arcgis-editor>
+          </arcgis-expand>
+          <arcgis-expand group="bottom-right" id="detail-expand" expand-icon="tools">
+            <arcgis-editor id="editor" reference-element="scene-div" hidden></arcgis-editor>
+            <arcgis-editor id="editor-add" reference-element="scene-div" hidden></arcgis-editor>
+            <arcgis-feature-table id="attributes-table" reference-element="scene-div" hidden editing-enabled sync-view-selection></arcgis-feature-table>
+            <arcgis-elevation-profile id="elevation-profile" reference-element="scene-div" hidden></arcgis-elevation-profile>
+          </arcgis-expand>
+        </div>
         <arcgis-popup slot="popup" hide-feature-navigation></arcgis-popup>
-        <arcgis-editor slot="bottom-right" id="editor" reference-element="scene-div" hidden></arcgis-editor>
-        <arcgis-editor slot="bottom-right" id="editor-add" reference-element="scene-div" hidden></arcgis-editor>
-        <arcgis-feature-table slot="bottom-right" id="attributes-table" reference-element="scene-div" hidden editing-enabled sync-view-selection></arcgis-feature-table>
-        <arcgis-elevation-profile slot="bottom-right" reference-element="scene-div" hidden></arcgis-elevation-profile>
       </arcgis-scene>
     </calcite-shell>
-    <div id="myDiv">test</div>
+    <div id="myDiv"></div>
 
     <calcite-dialog id="file-import-dialog">
       <span slot="title">Import features from file</span>
@@ -138,6 +162,8 @@
   </body>
 
   <script type="module">
+    const PictureMarkerSymbol = await $arcgis.import("@arcgis/core/symbols/PictureMarkerSymbol.js");
+    const GraphicsLayer = await $arcgis.import("@arcgis/core/layers/GraphicsLayer.js");
     const Bookmark = await $arcgis.import("@arcgis/core/webmap/Bookmark.js");
     const Graphic = await $arcgis.import("@arcgis/core/Graphic.js");
     const Point = await $arcgis.import("@arcgis/core/geometry/Point.js");
@@ -162,7 +188,7 @@
     const viewElement = document.querySelector("arcgis-scene");
 
     const REDIRECT_URI = `${window.location.origin}/TravelBase/travelbaseV3/`; //"http://localhost:8000/";
-    // const REDIRECT_URI = "http://localhost:8000/travelbaseV3.html"; //"http://localhost:8000/";
+    // const REDIRECT_URI = "http://localhost:8000/"; //"http://localhost:8000/";
     const CLIENT_ID = "2h95rnvy2dubcsw"; // <-- your client id
     let dbxAuth = new Dropbox.DropboxAuth({ clientId: CLIENT_ID });
     let dbx = new Dropbox.Dropbox({ auth: dbxAuth });
@@ -174,11 +200,115 @@
       trips: null,
       mode: null,
     };
+    let mainDataLoaded = false;
+    let currentDetailWidget = null;
+
+    function toggleDetailWidget(widget) {
+      const detailExpand = document.getElementById("detail-expand");
+      const popupComponent = document.querySelector("arcgis-popup");
+      const elevationProfile = document.getElementById("elevation-profile");
+      const widgets = [document.getElementById("attributes-table"), document.getElementById("editor-add"), document.getElementById("editor"), elevationProfile];
+
+      const shouldShow = !!widget && (currentDetailWidget !== widget || !detailExpand?.expanded);
+
+      widgets.forEach((candidate) => {
+        if (candidate) candidate.hidden = !shouldShow || candidate !== widget;
+      });
+
+      document.querySelectorAll("arcgis-expand").forEach((expand) => {
+        if (expand !== detailExpand) {
+          expand.expanded = false;
+        }
+      });
+
+      if (popupComponent) {
+        popupComponent.open = false;
+      }
+
+      if (detailExpand) {
+        detailExpand.expanded = shouldShow;
+      }
+
+      if (!shouldShow && elevationProfile) {
+        elevationProfile.clear();
+      }
+
+      currentDetailWidget = shouldShow ? widget : null;
+    }
+
+    function updateNavigationLayout() {
+      const isMobile = window.matchMedia("(max-width: 768px)").matches;
+      document.getElementById("travelbase-logo").textEnabled = !isMobile;
+    }
+
+    // window.addEventListener("resize", updateNavigationLayout);
+
+    async function loadMainData() {
+      if (mainDataLoaded) return;
+
+      try {
+        const config = await fetchDropboxFile("config.json");
+        if (!config?.layers) {
+          throw new Error("No layer configuration found.");
+        }
+
+        await setupMainLayers(viewElement, config);
+        await setupMainLayerList(viewElement);
+        await setupSearch();
+        await setupTripFilter(viewElement, config);
+
+        fileImporter = await setupFileImport();
+        mainDataLoaded = true;
+        updateSaveActionButton();
+
+        const modeGroup = document.getElementById("modes");
+        modeGroup.addEventListener("calciteChipGroupSelect", () => {
+          const selected = modeGroup.selectedItems;
+          globalFilters.mode = selected.length ? selected[0].value : null;
+          viewElement.map.layers.forEach(applyFilters);
+        });
+
+        // EDITOR
+
+        const editorComponent = document.querySelector("arcgis-editor");
+        const editorAddComponent = document.getElementById("editor-add");
+        const popupComponent = document.querySelector("arcgis-popup");
+        let popupFeatures = null;
+        let creatingLayer = null;
+
+        // Watch editor-add state for visibility control
+        reactiveUtils.watch(
+          () => editorAddComponent?.state,
+          (state) => {
+            if (state === "ready" || state === "disabled" || state === null) {
+              editorAddComponent.hidden = true;
+            }
+          },
+        );
+
+        reactiveUtils.when(
+          () => editorComponent?.state === "ready",
+          () => {
+            if (popupFeatures) {
+              popupComponent.features = popupFeatures;
+            }
+            popupComponent.setFocus?.();
+            popupComponent.open = true;
+            editorComponent.hidden = true;
+            editorComponent.cancelWorkflow?.();
+          },
+        );
+      } catch (error) {
+        console.error("Failed to load main data:", error);
+        window.alert(`Failed to load data: ${error?.message || error}`);
+      }
+    }
+
+    function updateSaveActionButton() {
+      document.getElementById("save-action").icon = mainDataLoaded ? "save" : "download";
+    }
 
     const setup = async () => {
-      // const config = await loadConfig();
-      let config = await fetchDropboxFile("config.json");
-
       if (initialized || !viewElement?.view) return;
       initialized = true;
       viewElement.view.effects = {
@@ -192,89 +322,45 @@
       setupBasemaps();
       setupThematicLayers(viewElement);
       setupThematicLayerList(viewElement);
-      await setupMainLayers(viewElement, config);
-      await setupMainLayerList(viewElement);
-      await setupSearch();
       await setupPopup(viewElement);
-      await setupTripFilter(viewElement, config);
-      fileImporter = await setupFileImport(); // to fix
-
-      // FILTERS
-      const modesEl = document.getElementById("modes");
-
-      modesEl.addEventListener("calciteChipGroupSelect", () => {
-        const selected = modesEl.selectedItems;
-
-        if (!selected.length) {
-          globalFilters.mode = null; // ✅ remove filter
-        } else {
-          globalFilters.mode = selected[0].value;
-        }
-
-        viewElement.map.layers.forEach(applyFilters);
-      });
-
-      // EDITOR
-
-      const editorComponent = document.querySelector("arcgis-editor");
-      const editorAddComponent = document.getElementById("editor-add");
-      const popupComponent = document.querySelector("arcgis-popup");
-      let popupFeatures = null;
-      let creatingLayer = null;
-
-      // Watch editor-add state for visibility control
-      reactiveUtils.watch(
-        () => editorAddComponent?.state,
-        (state) => {
-          if (state === "ready" || state === "disabled" || state === null) {
-            editorAddComponent.hidden = true;
-          }
-        },
-      );
-
-      reactiveUtils.when(
-        () => editorComponent?.state === "ready",
-        () => {
-          let creatingLayer = null;
-          if (creatingLayer) {
-            creatingLayer = null;
-            // Don't cancel workflow for create operations - let user continue or cancel manually
-            editorComponent.hidden = true;
-          } else {
-            if (popupFeatures) {
-              popupComponent.features = popupFeatures;
-            }
-            popupComponent.setFocus?.();
-            popupComponent.open = true;
-            editorComponent.hidden = true;
-            editorComponent.cancelWorkflow?.();
-          }
-        },
-      );
     };
+
+    // let view = viewElement.view;
+    // view.on("click", async (event) => {
+    //   const hit = await view.hitTest(event);
+
+    //   const hitGraphic = hit.results.find((result) => result.graphic?.layer === photoLayer)?.graphic;
+
+    //   const img = hitGraphic?.attributes?.img;
+    //   if (!img) return;
+
+    //   openImage(img);
+    // });
 
     // viewElement.addEventListener("arcgisViewReadyChange", setup);
     // await setup();
     window.onload = async function () {
-      dbxAuth = new Dropbox.DropboxAuth({ clientId: CLIENT_ID });
+      updateNavigationLayout();
+      updateSaveActionButton();
 
-      if (!hasRedirectedFromAuth()) {
-        doAuth();
-        return;
+      if (viewElement?.view) {
+        await setup();
+      } else {
+        viewElement.addEventListener("arcgisViewReadyChange", setup);
       }
 
-      try {
-        dbxAuth.setCodeVerifier(window.sessionStorage.getItem("codeVerifier"));
-
-        const tokenResponse = await dbxAuth.getAccessTokenFromCode(REDIRECT_URI, getCodeFromUrl());
-
-        dbxAuth.setAccessToken(tokenResponse.result.access_token);
-
-        dbx = new Dropbox.Dropbox({ auth: dbxAuth });
-        viewElement.addEventListener("arcgisViewReadyChange", setup);
-        await setup();
-      } catch (error) {
-        console.error("Auth error:", error);
+      if (hasRedirectedFromAuth()) {
+        try {
+          dbxAuth.setCodeVerifier(window.sessionStorage.getItem("codeVerifier"));
+          const tokenResponse = await dbxAuth.getAccessTokenFromCode(REDIRECT_URI, getCodeFromUrl());
+          if (tokenResponse?.result?.access_token) {
+            dbxAuth.setAccessToken(tokenResponse.result.access_token);
+            dbx = new Dropbox.Dropbox({ auth: dbxAuth });
+            await loadMainData();
+          }
+        } catch (error) {
+          console.error("Auth error:", error);
+        }
       }
     };
 
@@ -580,6 +666,7 @@
         id: "TL_iNaturalist",
         title: "iNaturalist",
         visible: false,
+        definitionExpression: `taxon_category_name IN ('Mammalia', 'Aves', 'Reptilia', 'Amphibia')`,
       });
 
       const slope = rasterFunctionUtils.slope({
@@ -634,11 +721,6 @@
         opacity: 0.7,
         visible: false,
       });
-      const testLayer = new FeatureLayer({
-        url: "https://services2.arcgis.com/cFEFS0EWrhfDeVw9/arcgis/rest/services/SwissNationalParkHikingTrails/FeatureServer/0",
-        title: "test",
-        visible: false,
-      });
 
       //     .queryFeatures({
       // outFields: ["*"],
@@ -671,6 +753,7 @@
         visible: false,
         sublayers: [
           {
+            title: "Water Zurich",
             name: "Brunnen",
             id: "TL_Brunnen",
           },
@@ -698,7 +781,6 @@
         slopeLayer,
         DEMLayer,
         iNaturalistLayer,
-        testLayer,
       ]);
     }
     function setupThematicLayerList(viewElement) {
@@ -745,28 +827,9 @@
     async function setupMainLayers(viewElement, config) {
       const layers = [];
 
-     for (const layerConfig of config.layers) {
-        // const geojson = await fetchDropboxFile(`${layerConfig.name}.geojson`);
-        // if (!geojson) {
-        //   console.warn(`Skipping ${layerConfig.name} (no GeoJSON found)`);
-        //   continue;
-        // }
-const path = `/${layerConfig.name}.geojson`;
+      for (const layerConfig of config.layers) {
+        const path = `/${layerConfig.name}.geojson`;
         const response = await dbx.filesGetTemporaryLink({ path });
-
-        // const url = `data/${layerConfig.name}.geojson`;
-
-        // ✅ Check if file exists
-        // try {
-        //   const res = await fetch(url, { method: "HEAD" });
-        //   if (!res.ok) {
-        //     console.warn(`Skipping ${layerConfig.name} (no GeoJSON found)`);
-        //     continue;
-        //   }
-        // } catch (err) {
-        //   console.warn(`Error checking ${layerConfig.name}`, err);
-        //   continue;
-        // }
 
         const layer = new GeoJSONLayer({
           url: response.result.link,
@@ -813,7 +876,12 @@ const path = `/${layerConfig.name}.geojson`;
           id.includes("swisstopo") ||
           id.includes("tl_swisstopo_hiking_trails") ||
           id.includes("tl_hiking_trails") ||
-          url.includes("wms.geo.admin.ch")
+          url.includes("wms.geo.admin.ch") ||
+          url.includes("www.ogd.stadt-zuerich.ch") ||
+          id.includes("tl_waterzurich") ||
+          title.includes("water zurich") ||
+          id.includes("TL_Brunnen") ||
+          title.includes("Brunnen")
         );
       };
 
@@ -822,6 +890,9 @@ const path = `/${layerConfig.name}.geojson`;
         return !isThematicItem(item) && !isSwissHikingItem(item);
       };
       const attributesTable = document.getElementById("attributes-table");
+      const editorAddComponent = document.getElementById("editor-add");
+      const elevationProfile = document.getElementById("elevation-profile");
+
       mainLayerListEl.listItemCreatedFunction = async (event) => {
         const item = event.item;
         const container = document.createElement("myDiv");
@@ -867,9 +938,8 @@ const path = `/${layerConfig.name}.geojson`;
         if (!layer) return;
 
         if (action.id === "add-features") {
-          // startAddWorkflow(layer);
-          const editorAddComponent = document.getElementById("editor-add");
-          editorAddComponent.hidden = !editorAddComponent.hidden;
+          toggleDetailWidget(editorAddComponent);
+          await startAddWorkflow(layer);
           return;
         }
         if (action.id === "add-from-file") {
@@ -889,7 +959,7 @@ const path = `/${layerConfig.name}.geojson`;
             return;
           }
           attributesTable.layer = layer;
-          attributesTable.hidden = !attributesTable.hidden;
+          toggleDetailWidget(attributesTable);
           attributesTable.actionColumnConfig = {
             label: "Go to feature",
             icon: "zoom-to-object",
@@ -929,6 +999,7 @@ const path = `/${layerConfig.name}.geojson`;
         exactMatch: false,
         outFields: ["*"],
         name: layer.title || layer.id || "Layer",
+        prefix: "%",
       }));
     }
     function setupPopupTemplate(layer) {
@@ -1004,7 +1075,7 @@ const path = `/${layerConfig.name}.geojson`;
         if (actionId === "show-profile") {
           const elevationProfile = document.querySelector("arcgis-elevation-profile");
           elevationProfile.geometry = currentPopupFeature.geometry;
-          elevationProfile.hidden = !elevationProfile.hidden;
+          toggleDetailWidget(elevationProfile);
           return;
         }
         if (actionId === "share-feature") {
@@ -1340,6 +1411,7 @@ const path = `/${layerConfig.name}.geojson`;
           ? buildFilterExpr({
               field: "trips",
               values: selected,
+              allowNull: false,
             })
           : null;
 
@@ -1857,6 +1929,7 @@ const path = `/${layerConfig.name}.geojson`;
 
       if (!editorComponent.activeWorkflow) {
         editorComponent.view = viewElement.view || editorComponent.view;
+        toggleDetailWidget(editorComponent);
         popupComponent.open = false;
         editorComponent.hidden = false;
         try {
@@ -1935,6 +2008,8 @@ const path = `/${layerConfig.name}.geojson`;
     async function startAddWorkflow(layer) {
       const editorAddComponent = document.getElementById("editor-add");
 
+      editorAddComponent.view = viewElement.view || editorAddComponent.view;
+      toggleDetailWidget(editorAddComponent);
       editorAddComponent.hidden = false;
 
       try {
@@ -1975,9 +2050,34 @@ const path = `/${layerConfig.name}.geojson`;
       editor.layerInfos = [...existing, editInfo];
     }
 
+    /* ======================================================
+     * Fullscreen image logic
+     * ====================================================== */
+    // const overlay = document.getElementById("overlay");
+    // const overlayImage = document.getElementById("overlayImage");
+    // const closeBtn = document.getElementById("closeBtn");
+
+    // function openImage(url) {
+    //   overlayImage.src = url;
+    //   overlay.style.display = "flex";
+    // }
+
+    // function closeImage() {
+    //   overlay.style.display = "none";
+    //   overlayImage.src = "";
+    // }
+
+    // closeBtn.addEventListener("click", closeImage);
+    // overlay.addEventListener("click", (e) => {
+    //   if (e.target === overlay) closeImage();
+    // });
+    // window.addEventListener("keydown", (e) => {
+    //   if (e.key === "Escape") closeImage();
+    // });
+
     /* =========================
-   DROPBOX
-========================= */
+           DROPBOX
+        ========================= */
 
     function getCodeFromUrl() {
       return new URLSearchParams(window.location.search).get("code");
@@ -1987,7 +2087,7 @@ const path = `/${layerConfig.name}.geojson`;
       return !!getCodeFromUrl();
     }
 
-    function doAuth(dbxAuth) {
+    function doAuth() {
       dbxAuth = new Dropbox.DropboxAuth({ clientId: CLIENT_ID });
 
       dbxAuth
@@ -2021,5 +2121,143 @@ const path = `/${layerConfig.name}.geojson`;
         return "";
       }
     }
+
+    async function uploadGeoJSONToDropbox(path, jsonStr) {
+      try {
+        const res = await dbx.filesUpload({
+          path,
+          contents: new Blob([jsonStr], { type: "application/json" }),
+          mode: { ".tag": "overwrite" },
+        });
+        return res;
+      } catch (err) {
+        throw err;
+      }
+    }
+
+    /* =========================
+       SAVE / EXPORT LAYERS -> DROPBOX
+       ========================= */
+
+    async function layerToGeoJSON(layer) {
+      try {
+        await layer.load();
+      } catch (e) {
+        console.warn("Failed to load layer for export:", layer && (layer.id || layer.title), e);
+      }
+
+      if (typeof layer.queryFeatures !== "function") return null;
+
+      const q = await layer.queryFeatures({ where: "1=1", outFields: ["*"], returnGeometry: true, outSpatialReference: { wkid: 4326 } });
+
+      const features = (q.features || []).map((f) => {
+        const geom = f.geometry || null;
+        let geometry = null;
+
+        if (geom) {
+          // POINT
+          if (geom.type === "point") {
+            const lon = geom.longitude ?? geom.x ?? (geom.coordinates && geom.coordinates[0]);
+            const lat = geom.latitude ?? geom.y ?? (geom.coordinates && geom.coordinates[1]);
+            const coords = typeof lon === "number" && typeof lat === "number" ? [lon, lat] : null;
+            if (coords) geometry = { type: "Point", coordinates: coords };
+          }
+
+          // POLYLINE -> LineString or MultiLineString
+          else if (geom.type === "polyline") {
+            const paths = geom.paths || [];
+            if (paths.length === 1) geometry = { type: "LineString", coordinates: paths[0] };
+            else geometry = { type: "MultiLineString", coordinates: paths };
+          }
+        }
+
+        // clone attributes and remove internal object id field
+        const props = { ...(f.attributes || {}) };
+        const objectIdField = layer.objectIdField;
+        if (objectIdField && props[objectIdField] != null) delete props[objectIdField];
+
+        // if attributes contain 'id', move it to feature id (to match original files)
+        let featureId = null;
+        if (props.id != null) {
+          featureId = props.id;
+          delete props.id;
+        }
+
+        const out = { type: "Feature", geometry, properties: props };
+        if (featureId != null) out.id = featureId;
+        return out;
+      });
+
+      return { type: "FeatureCollection", features };
+    }
+
+    async function saveAllLayersToDropbox() {
+      const layers = viewElement.map.allLayers.toArray?.() || [];
+      const geojsonLayers = layers.filter((l) => {
+        if (!l) return false;
+        const id = String(l.id || "");
+        if (/^tl_/i.test(id)) return false;
+        const url = String(l.url || "");
+        return l.type === "geojson" || l instanceof GeoJSONLayer || url.toLowerCase().includes(".geojson") || id.toLowerCase().endsWith(".geojson");
+      });
+
+      console.log(
+        `Found ${geojsonLayers.length} GeoJSON layers to export:`,
+        geojsonLayers.map((l) => l.id || l.title),
+      );
+      if (!geojsonLayers.length) {
+        window.alert("No editable GeoJSON layers found to save.");
+        return;
+      }
+
+      const results = [];
+
+      for (const layer of geojsonLayers) {
+        try {
+          const fc = await layerToGeoJSON(layer);
+          if (!fc) {
+            results.push({ layer: layer.id || layer.title, ok: false, error: "no features" });
+            continue;
+          }
+
+          const jsonStr = JSON.stringify(fc, null, 2);
+          const filename = `/${layer.id || layer.title || "layer"}.geojson`;
+
+          console.log(`Exporting layer "${layer.id || layer.title}":`, filename);
+          await uploadGeoJSONToDropbox(filename, jsonStr);
+          results.push({ layer: layer.id || layer.title, ok: true });
+        } catch (err) {
+          console.error("Failed to export/upload layer", layer && (layer.id || layer.title), err);
+          results.push({ layer: layer.id || layer.title, ok: false, error: err?.message || err });
+        }
+      }
+
+      const failed = results.filter((r) => !r.ok);
+      if (!failed.length) {
+        window.alert(`Upload successful: ${results.length} layer(s) saved to Dropbox.`);
+      } else {
+        window.alert(`Upload finished with ${failed.length} failure(s). See console for details.`);
+      }
+      return results;
+    }
+
+    document.getElementById("save-action").addEventListener("click", async () => {
+      try {
+        if (!dbxAuth.getAccessToken()) {
+          doAuth();
+          return;
+        }
+
+        if (!mainDataLoaded) {
+          await loadMainData();
+          return;
+        }
+
+        await saveAllLayersToDropbox();
+      } catch (err) {
+        console.error("Save action failed:", err);
+        window.alert(`Save failed: ${err?.message || err}`);
+      }
+    });
   </script>
 </html>
