@@ -1,0 +1,268 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
+    <title>TravelBase3</title>
+    <link rel="icon" type="image/png" href="icon-192.png" />
+    <link rel="icon" href="data:;base64,=" />
+    <style>
+      :root {
+        --calcite-scrim-background: rgba(0, 0, 0, 0.2) !important;
+      }
+
+      html,
+      body {
+        background-color: var(--calcite-ui-foreground-2);
+        --calcite-color-focus: rgb(0, 0, 0, 0.5);
+        height: 100%;
+        margin: 0;
+      }
+
+      calcite-panel {
+        padding: 1rem;
+      }
+
+      #modes {
+        width: max-content;
+        padding: 0.5rem;
+      }
+
+      #detail-expand .scrim {
+        background-color: rgba(0, 0, 0, 0.5);
+        --calcite-scrim-background: rgba(0, 0, 0, 0.5);
+      }
+
+      #popover-content {
+        padding: 1.5rem;
+      }
+
+      calcite-shell,
+      calcite-navigation {
+        overflow: visible;
+      }
+
+      arcgis-daylight {
+        padding: 1rem;
+      }
+
+      arcgis-basemap-gallery {
+        width: 500px;
+      }
+
+      arcgis-feature-table {
+        height: 40vh;
+        width: 100%;
+      }
+
+      @media (min-width: 768px) {
+        arcgis-feature-table {
+          height: 33vh;
+          width: 66vw;
+        }
+      }
+    </style>
+    <!-- Load the ArcGIS Maps SDK for JavaScript from the CDN -->
+    <script type="module" src="https://js.arcgis.com/5.0/"></script>
+    <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
+  </head>
+
+  <body class="calcite-mode-dark">
+    <!-- The Shell component is used as a layout for this template -->
+    <calcite-popover id="popover-links" reference-element="travelbase-logo" label="links" overlay-positioning="fixed" placement="bottom-start" offset-distance="15" offset-skidding="15">
+      <div id="popover-content">
+        <calcite-link icon-start="explore" href="https://pl.mapy.cz/zakladni?x=21.7830684&y=52.1400187&z=8" target="_blank"> Mapy.CZ</calcite-link><br />
+        <calcite-link
+          icon-start="analysis"
+          href="https://map.schweizmobil.ch/?land=wanderland&lang=en&route=113&photos=yes&bgLayer=pk&logo=yes&season=summer&resolution=3.98&E=2546634&N=1148788&detours=yes&layers=Wanderland%2CAccomodation"
+          target="_blank"
+        >
+          Schweiz Mobile </calcite-link
+        ><br />
+        <calcite-link icon-start="partly-cloudy" href="https://www.meteoswiss.admin.ch/local-forecasts/zurich/8001.html#forecast-tab=detail-view" target="_blank"> Swiss Meteo </calcite-link><br />
+        <calcite-link icon-start="bus" href="https://www.sbb.ch/en/buying/pages/fahrplan/fahrplan.xhtml" target="_blank"> SBB </calcite-link><br />
+        <calcite-link icon-start="bus" href="http://isochrones.ch/" target="_blank"> Isochrones </calcite-link><br />
+        <calcite-link icon-start="walking-distance" href="https://swissfamilyfun.com/?post_type=post" target="_blank"> Swiss Family Fun</calcite-link><br />
+        <calcite-link icon-start="home" href="https://www.sac-cas.ch/de/huetten-und-touren/sac-tourenportal/?type=hut&sortField=display_name" target="_blank"> SAC</calcite-link><br />
+        <calcite-link icon-start="snow" href="https://whiterisk.ch/en/conditions/snow-maps/snow_depth" target="_blank"> Snow Cover CH </calcite-link><br />
+        <calcite-link icon-start="drone-flying-wing" href="https://www.inaturalist.org/" target="_blank"> iNaturalist </calcite-link><br />
+        <calcite-link icon-start="drone-flying-wing" href="https://ebird.org/hotspots" target="_blank"> eBird </calcite-link><br />
+        <calcite-link icon-start="drone-flying-wing" href="https://www.birdingplaces.eu/en/find-a-birdingplace#3.71/54.27/16.35" target="_blank"> BirdingPlaces </calcite-link><br />
+        <calcite-link icon-start="drone-flying-wing" href="https://www.vogelwarte.ch/de/voegel-der-schweiz/" target="_blank"> VogelWarte </calcite-link><br />
+      </div>
+    </calcite-popover>
+    <calcite-shell>
+      <calcite-navigation slot="header">
+        <calcite-action id="travelbase-logo" slot="content-start" icon="map-pin" scale="l" text="TravelBase" text-enabled></calcite-action>
+        <calcite-chip-group id="modes" selection-mode="single" slot="content-center" scale="s">
+          <calcite-chip value="Archive">Archive</calcite-chip>
+          <calcite-chip value="NOW"> NOW </calcite-chip>
+          <calcite-chip value="Plans">Plans</calcite-chip>
+        </calcite-chip-group>
+        <calcite-combobox id="trip-filter" placeholder="Trips" slot="content-start" scale="s"></calcite-combobox>
+        <calcite-action id="save-action" slot="content-end" icon="download" scale="l"></calcite-action>
+      </calcite-navigation>
+
+      <arcgis-scene id="viewElement" basemap="dark-gray" ground="world-elevation" zoom="8" center="8.3,46.8">
+        <arcgis-zoom slot="top-right"></arcgis-zoom>
+        <arcgis-navigation-toggle slot="top-right"></arcgis-navigation-toggle>
+        <arcgis-compass slot="top-right"></arcgis-compass>
+        <div slot="top-right">
+          <arcgis-track></arcgis-track>
+          <arcgis-home></arcgis-home>
+          <arcgis-expand auto-collapse group="top-right">
+            <arcgis-bookmarks drag-enabled show-add-bookmark-button show-edit-bookmark-button></arcgis-bookmarks>
+          </arcgis-expand>
+          <arcgis-expand auto-collapse group="top-right">
+            <arcgis-search max-results="10"></arcgis-search>
+          </arcgis-expand>
+        </div>
+        <div slot="top-right">
+          <arcgis-expand auto-collapse group="top-right">
+            <arcgis-basemap-gallery></arcgis-basemap-gallery>
+          </arcgis-expand>
+          <arcgis-expand auto-collapse expand-icon="layer-basemap" group="top-right">
+            <arcgis-layer-list id="thematic-layers"></arcgis-layer-list>
+          </arcgis-expand>
+          <arcgis-expand auto-collapse group="top-right">
+            <arcgis-daylight></arcgis-daylight>
+          </arcgis-expand>
+        </div>
+
+        <arcgis-expand group="bottom-right" slot="bottom-right">
+          <arcgis-layer-list id="main-layers" reference-element="viewElement"></arcgis-layer-list>
+        </arcgis-expand>
+        <arcgis-expand group="bottom-right" id="tools-expand" expand-icon="tools" slot="bottom-right">
+          <calcite-tabs id="tools-tabs" layout="center" scale="s">
+            <calcite-tab-nav slot="title-group">
+              <calcite-tab-title icon-start="pencil"></calcite-tab-title>
+              <calcite-tab-title icon-start="altitude"></calcite-tab-title>
+              <calcite-tab-title icon-start="table"></calcite-tab-title>
+            </calcite-tab-nav>
+            <calcite-tab selected>
+              <arcgis-editor id="editor" reference-element="viewElement" hide-settings-menu></arcgis-editor>
+            </calcite-tab>
+            <calcite-tab>
+              <arcgis-elevation-profile id="elevation-profile" reference-element="viewElement"></arcgis-elevation-profile>
+            </calcite-tab>
+            <calcite-tab>
+              <arcgis-feature-table id="attributes-table" reference-element="viewElement" editing-enabled></arcgis-feature-table>
+            </calcite-tab>
+          </calcite-tabs>
+        </arcgis-expand>
+        <arcgis-expand group="bottom-right" expand-icon="tour" slot="bottom-right">
+          <div>Tours: todo</div>
+        </arcgis-expand>
+        <arcgis-popup slot="popup" hide-feature-navigation></arcgis-popup>
+      </arcgis-scene>
+    </calcite-shell>
+    <div id="layerDiv"></div>
+
+    <calcite-dialog id="file-import-dialog">
+      <span slot="title">Import features from file</span>
+      <div id="file-import-dialog-content">
+        <calcite-label layout="inline">
+          Select GeoJSON or GPX file
+          <input id="file-import-input" type="file" accept=".geojson,.json,.gpx" multiple />
+        </calcite-label>
+        <div id="file-import-mapping" style="margin-top: 1rem; display: grid; gap: 0.75rem"></div>
+      </div>
+      <calcite-button slot="footer-end" id="file-import-cancel" appearance="outline">Cancel</calcite-button>
+      <calcite-button slot="footer-end" id="file-import-confirm" appearance="solid" disabled>Import</calcite-button>
+    </calcite-dialog>
+  </body>
+
+  <script type="module">
+    const Graphic = await $arcgis.import("@arcgis/core/Graphic.js");
+    const Point = await $arcgis.import("@arcgis/core/geometry/Point.js");
+    const FeatureLayer = await $arcgis.import("@arcgis/core/layers/FeatureLayer.js");
+    const webMercatorUtils = await $arcgis.import("@arcgis/core/geometry/support/webMercatorUtils.js");
+
+    import { doAuth, fetchDropboxFile, saveAllLayersToDropbox, handleAuthRedirect } from "./dropbox.js";
+    import { setupBookmarks, setupBasemaps, setupThematicLayers, setupThematicLayerList } from "./mapControls.js";
+    import { setupModeFilter, setupTripFilter, setupLayerFilter } from "./mapFilter.js";
+    import { setupMainLayers, setupMainLayerList, setupPopup, setupSearch } from "./mapData.js";
+
+    const REDIRECT_URI = `${window.location.origin}/TravelBase/travelbaseV3/`; //"http://localhost:8000/";
+    // const REDIRECT_URI = "http://localhost:8000/"; //"http://localhost:8000/";
+    const CLIENT_ID = "2h95rnvy2dubcsw"; // <-- your client id
+    let dbxAuth = new Dropbox.DropboxAuth({ clientId: CLIENT_ID });
+    let dbx = new Dropbox.Dropbox({ auth: dbxAuth });
+
+    document.getElementById("travelbase-logo").textEnabled = !window.matchMedia("(max-width: 768px)").matches;
+
+    let initialized = false;
+    let mainDataLoaded = false;
+    let hasEdits = false;
+    const layerFilters = {};
+    const globalFilters = {
+      trips: null,
+      mode: null,
+    };
+
+    const viewElement = document.getElementById("viewElement");
+    await viewElement.viewOnReady();
+    initialized = true;
+    viewElement.view.effects = {
+      glow: {
+        enabled: true,
+        intensity: 3,
+      },
+    };
+
+    setupBookmarks();
+    setupBasemaps();
+    setupThematicLayers(viewElement);
+    setupThematicLayerList(viewElement);
+
+    const authFinished = await handleAuthRedirect(dbx, dbxAuth, REDIRECT_URI);
+    if (authFinished) {
+      await initializeApp(dbx, viewElement);
+    }
+
+    document.getElementById("save-action").addEventListener("click", async () => {
+      try {
+        if (!mainDataLoaded) {
+          const ok = await doAuth(dbxAuth, REDIRECT_URI);
+          if (!ok) return;
+
+          await initializeApp(dbx, viewElement);
+        } else {
+          await saveAllLayersToDropbox(dbx, viewElement);
+          hasEdits = false;
+        }
+      } catch (err) {
+        console.error("Save action failed:", err);
+        alert(`Save failed: ${err?.message || err}`);
+      }
+    });
+
+    async function initializeApp(dbx, viewElement) {
+      try {
+        const config = await fetchDropboxFile(dbx, "config.json");
+        document.getElementById("save-action").icon = "save";
+
+        await setupMainLayers(viewElement, dbx, config);
+        await setupMainLayerList(viewElement, layerFilters, globalFilters, hasEdits);
+        await setupPopup(viewElement);
+        await setupSearch(viewElement);
+        await setupTripFilter(viewElement, layerFilters, globalFilters, config);
+        setupModeFilter(viewElement, layerFilters, globalFilters);
+
+        mainDataLoaded = true;
+      } catch (error) {
+        console.error("Failed to load main data:", error);
+        alert(`Failed to load data: ${error?.message || error}`);
+      }
+    }
+
+    // detect edits and prevent form closing
+    window.onbeforeunload = function (event) {
+      if (hasEdits) {
+        event.returnValue = "Unsaved changes!";
+      }
+    };
+
+    ["arcgisSketchCreate", "arcgisSketchUpdate"].forEach((t) => document.querySelector("arcgis-editor").addEventListener(t, () => (hasEdits = true)));
+  </script>
+</html>
