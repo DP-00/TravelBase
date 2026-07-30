@@ -45,16 +45,8 @@ function hasRedirectedFromAuth() {
 
 export async function fetchDropboxFile(dbx, file) {
   const pathToFetch = `/${file}`; // All files are at app folder root
-  console.log("Fetching file:", file, "-> path:", pathToFetch);
 
   try {
-    // List all files in the app folder for debugging
-    const filesList = await dbx.filesListFolder({ path: "" });
-    console.log(
-      "Files in app folder:",
-      filesList.result.entries.map((f) => f.name),
-    );
-
     const response = await dbx.filesGetTemporaryLink({ path: pathToFetch });
     const res = await fetch(response.result.link);
 
@@ -78,7 +70,7 @@ async function uploadGeoJSONToDropbox(dbx, path, jsonStr) {
   }
 }
 
-async function layerToGeoJSON(layer) {
+export async function layerToGeoJSON(layer) {
   try {
     await layer.load();
   } catch (e) {
@@ -140,30 +132,35 @@ export async function saveAllLayersToDropbox(dbx, viewElement) {
     return l.type === "geojson" || l instanceof GeoJSONLayer || url.toLowerCase().includes(".geojson") || id.toLowerCase().endsWith(".geojson");
   });
 
-  console.log(
-    `Found ${geojsonLayers.length} GeoJSON layers to export:`,
-    geojsonLayers.map((l) => l.id || l.title),
-  );
-  if (!geojsonLayers.length) {
-    window.alert("No editable GeoJSON layers found to save.");
-    return;
-  }
-
   const results = [];
+  const changedLayers = [];
 
   for (const layer of geojsonLayers) {
     try {
       const fc = await layerToGeoJSON(layer);
       if (!fc) {
-        results.push({ layer: layer.id || layer.title, ok: false, error: "no features" });
         continue;
       }
 
       const jsonStr = JSON.stringify(fc, null, 2);
-      const filename = `/${layer.id || layer.title || "layer"}.geojson`;
+      if (layer.edited) {
+        changedLayers.push({ layer, jsonStr });
+      }
+    } catch (err) {
+      console.warn("Failed to compare layer for changes:", layer.id || layer.title, err);
+    }
+  }
 
-      console.log(`Exporting layer "${layer.id || layer.title}":`, filename);
+  if (!changedLayers.length) {
+    window.alert("No changed layers to save.");
+    return [];
+  }
+
+  for (const { layer, jsonStr } of changedLayers) {
+    try {
+      const filename = `/${layer.id || layer.title || "layer"}.geojson`;
       await uploadGeoJSONToDropbox(dbx, filename, jsonStr);
+      layer.edited = false;
       results.push({ layer: layer.id || layer.title, ok: true });
     } catch (err) {
       console.error("Failed to export/upload layer", layer && (layer.id || layer.title), err);
@@ -172,10 +169,22 @@ export async function saveAllLayersToDropbox(dbx, viewElement) {
   }
 
   const failed = results.filter((r) => !r.ok);
+  const saved = results.filter((r) => r.ok).length;
+  const savedNames = results.filter((r) => r.ok).map((r) => r.layer);
+  const failedNames = results.filter((r) => !r.ok).map((r) => r.layer);
+  const messageParts = [];
+
+  if (saved) {
+    messageParts.push(`${saved} layer(s) saved`);
+  }
+  if (!saved) {
+    messageParts.push("No layers were saved");
+  }
+
   if (!failed.length) {
-    window.alert(`Upload successful: ${results.length} layer(s) saved to Dropbox.`);
+    window.alert(`Upload successful: ${messageParts.join(", ")} to Dropbox for ${savedNames.join(", ")}.`);
   } else {
-    window.alert(`Upload finished with ${failed.length} failure(s). See console for details.`);
+    window.alert(`Upload finished with ${failed.length} failure(s). ${messageParts.join(", ")} Saved: ${savedNames.join(", ")}. Failed: ${failedNames.join(", ")}. See console for details.`);
   }
   return results;
 }
