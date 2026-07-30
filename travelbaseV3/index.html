@@ -189,6 +189,8 @@
     let dbxAuth = new Dropbox.DropboxAuth({ clientId: CLIENT_ID });
     let dbx = new Dropbox.Dropbox({ auth: dbxAuth });
 
+    const saveAction = document.getElementById("save-action");
+
     document.getElementById("travelbase-logo").textEnabled = !window.matchMedia("(max-width: 768px)").matches;
 
     let initialized = false;
@@ -220,30 +222,43 @@
       await initializeApp(dbx, viewElement);
     }
 
-    document.getElementById("save-action").addEventListener("click", async () => {
+    saveAction.addEventListener("click", async () => {
       try {
+        saveAction.setAttribute("loading", "");
+
         if (!mainDataLoaded) {
           const ok = await doAuth(dbxAuth, REDIRECT_URI);
           if (!ok) return;
 
           await initializeApp(dbx, viewElement);
         } else {
-          await saveAllLayersToDropbox(dbx, viewElement);
-          hasEdits = false;
+          if (!hasEdits) {
+            window.alert("No edits to save.");
+          } else {
+            const results = await saveAllLayersToDropbox(dbx, viewElement);
+            if (results.length > 0 && results.every((r) => r.ok)) {
+              hasEdits = false;
+            }
+          }
         }
       } catch (err) {
         console.error("Save action failed:", err);
         alert(`Save failed: ${err?.message || err}`);
+      } finally {
+        saveAction.removeAttribute("loading");
       }
     });
 
     async function initializeApp(dbx, viewElement) {
+      saveAction.setAttribute("loading", "");
       try {
         const config = await fetchDropboxFile(dbx, "config.json");
-        document.getElementById("save-action").icon = "save";
+        saveAction.icon = "save";
 
-        await setupMainLayers(viewElement, dbx, config);
-        await setupMainLayerList(viewElement, layerFilters, globalFilters, hasEdits);
+        await setupMainLayers(viewElement, dbx, config, () => {
+          hasEdits = true;
+        });
+        await setupMainLayerList(viewElement, layerFilters, globalFilters);
         await setupPopup(viewElement);
         await setupSearch(viewElement);
         await setupTripFilter(viewElement, layerFilters, globalFilters, config);
@@ -253,6 +268,8 @@
       } catch (error) {
         console.error("Failed to load main data:", error);
         alert(`Failed to load data: ${error?.message || error}`);
+      } finally {
+        saveAction.removeAttribute("loading");
       }
     }
 
@@ -262,7 +279,5 @@
         event.returnValue = "Unsaved changes!";
       }
     };
-
-    ["arcgisSketchCreate", "arcgisSketchUpdate"].forEach((t) => document.querySelector("arcgis-editor").addEventListener(t, () => (hasEdits = true)));
   </script>
 </html>
