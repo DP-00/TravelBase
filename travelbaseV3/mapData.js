@@ -1,10 +1,11 @@
 const GeoJSONLayer = await $arcgis.import("@arcgis/core/layers/GeoJSONLayer.js");
+const LabelClass = await $arcgis.import("@arcgis/core/layers/support/LabelClass.js");
 import { downloadGPXForFeature } from "./utils.js";
 import { editThis } from "./mapEdit.js";
 import { setupLayerFilter } from "./mapFilter.js";
 import { importDataFromFile } from "./mapEdit.js";
 
-export async function setupMainLayers(viewElement, dbx, config) {
+export async function setupMainLayers(viewElement, dbx, config, onLayerEdited) {
   const layers = [];
 
   for (const layerConfig of config.layers) {
@@ -21,14 +22,37 @@ export async function setupMainLayers(viewElement, dbx, config) {
       fields: layerConfig.fields,
       geometryType: layerConfig.geometryType,
       elevationInfo: { mode: "on-the-ground" },
+      labelingInfo: [
+        new LabelClass({
+          labelExpressionInfo: { expression: "$feature.name" },
+          symbol: {
+            type: "text",
+            color: "black",
+            haloSize: 0.5,
+            haloColor: "white",
+          },
+        }),
+      ],
+      labelsVisible: false,
     });
 
     if (layerConfig.renderer) {
       layer.renderer = buildRenderer(layerConfig);
     }
 
-    layer.load().then(() => {
-      layer.popupTemplate = setupPopupTemplate(layer);
+    layer.edited = false;
+
+    await layer.load();
+    layer.popupTemplate = setupPopupTemplate(layer);
+
+    layer.on("edits", (event) => {
+      const addedCount = (event.addedFeatures || []).length;
+      const updatedCount = (event.updatedFeatures || []).length;
+      const deletedCount = (event.deletedFeatures || []).length;
+      if (addedCount + updatedCount + deletedCount > 0) {
+        layer.edited = true;
+        onLayerEdited?.(layer);
+      }
     });
 
     layers.push(layer);
@@ -37,7 +61,7 @@ export async function setupMainLayers(viewElement, dbx, config) {
   viewElement.map.addMany(layers);
 }
 
-export async function setupMainLayerList(viewElement, layerFilters, globalFilters, hasEdits) {
+export async function setupMainLayerList(viewElement, layerFilters, globalFilters) {
   const isThematicItem = (item) => {
     const id = (item.layer?.id || item.id || item.title || "").toString().toLowerCase();
     return id.startsWith("tl_");
@@ -107,6 +131,11 @@ export async function setupMainLayerList(viewElement, layerFilters, globalFilter
           title: "Zoom to layer",
           icon: "magnifying-glass-plus",
         },
+        {
+          id: "toggle-labels",
+          title: "Toggle labels",
+          icon: "label",
+        },
       ],
     ];
   };
@@ -121,7 +150,7 @@ export async function setupMainLayerList(viewElement, layerFilters, globalFilter
       return;
     }
     if (action.id === "add-from-file") {
-      importDataFromFile(hasEdits, layer);
+      importDataFromFile(layer);
       return;
     }
     if (action.id === "zoom-to-layer") {
@@ -148,6 +177,10 @@ export async function setupMainLayerList(viewElement, layerFilters, globalFilter
         icon: "zoom-to-object",
         callback: (event) => viewElement.goTo(event.feature, { zoom: 12 }),
       };
+    }
+    if (action.id === "toggle-labels") {
+      layer.labelsVisible = !layer.labelsVisible;
+      return;
     }
   });
 }
@@ -242,7 +275,7 @@ export async function setupPopup(viewElement) {
     showPopupForFeature(feature, mapPoint);
   });
 
-  popupComponent.addEventListener("arcgisTriggerAction", (event) => {
+  popupComponent.addEventListener("arcgisTriggerAction", async (event) => {
     const actionId = event.detail?.action?.id;
     if (!currentPopupFeature) {
       return;
@@ -255,16 +288,32 @@ export async function setupPopup(viewElement) {
       downloadGPXForFeature(currentPopupFeature);
       return;
     }
+
+    // console.log("Popup action triggered:", currentPopupFeature);
+    const oidField = currentPopupFeature.layer.objectIdField;
+    const oid = currentPopupFeature.attributes[oidField];
+
+    const result = await currentPopupFeature.layer.queryFeatures({
+      where: `${oidField} = ${oid}`,
+      outFields: ["*"],
+      returnGeometry: true,
+    });
+
+    const feature = result.features[0];
+
     if (actionId === "show-profile") {
       const elevationProfile = document.querySelector("arcgis-elevation-profile");
-      elevationProfile.geometry = currentPopupFeature.geometry;
-      //   toggleDetailWidget(elevationProfile);
+      // elevationProfile.geometry = currentPopupFeature.geometry;
+      elevationProfile.geometry = feature.geometry;
+      document.getElementById("tools-expand").expanded = true;
+      document.getElementById("tools-tabs").querySelector("calcite-tab-title:nth-child(2)").click();
       return;
     }
     if (actionId === "share-feature") {
-      const ft = currentPopupFeature.geometry;
+      const ft = feature.geometry;
       const pt = ft.type === "point" ? ft : ft.extent.center;
-      const shareUrl = `https://www.google.com/maps/search/?api=1&query=${pt.latitude},${pt.longitude}`;
+      const name = feature.attributes?.name;
+      const shareUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${pt.latitude},${pt.longitude}`)}`;
       if (shareUrl) window.open(shareUrl, "_blank");
     }
   });
