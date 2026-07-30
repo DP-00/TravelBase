@@ -11,6 +11,10 @@ const LocalBasemapsSource = await $arcgis.import("@arcgis/core/widgets/BasemapGa
 const WebTileLayer = await $arcgis.import("@arcgis/core/layers/WebTileLayer.js");
 const WMSLayer = await $arcgis.import("@arcgis/core/layers/WMSLayer.js");
 const WMTSLayer = await $arcgis.import("@arcgis/core/layers/WMTSLayer.js");
+const MediaLayer = await $arcgis.import("@arcgis/core/layers/MediaLayer.js");
+const ImageElement = await $arcgis.import("@arcgis/core/layers/support/ImageElement.js");
+const ExtentAndRotationGeoreference = await $arcgis.import("@arcgis/core/layers/support/ExtentAndRotationGeoreference.js");
+const Extent = await $arcgis.import("@arcgis/core/geometry/Extent.js");
 const FeatureLayer = await $arcgis.import("@arcgis/core/layers/FeatureLayer.js");
 const rasterFunctionUtils = await $arcgis.import("@arcgis/core/layers/support/rasterFunctionUtils.js");
 
@@ -266,7 +270,7 @@ export function setupThematicLayers(viewElement) {
   const swissTopo = new WebTileLayer({
     urlTemplate: "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg",
     id: "TL_swisstopo",
-    title: "swisstopo",
+    title: "Swisstopo Basemap",
 
     visible: false,
   });
@@ -295,7 +299,7 @@ export function setupThematicLayers(viewElement) {
   const swissTopoHikingLayer = new WMSLayer({
     url: "https://wms.geo.admin.ch/",
     id: "TL_swisstopo_Hiking_Trails",
-    title: "swisstopo Hiking Trails",
+    title: "Swisstopo Trails",
     sublayers: [
       {
         name: "ch.swisstopo.swisstlm3d-wanderwege",
@@ -363,7 +367,7 @@ export function setupThematicLayers(viewElement) {
   const DEMLayer = new ImageryTileLayer({
     url: "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer",
     id: "TL_Elevation",
-    title: "Elevation (m a.s.l.)",
+    title: "Elevation (m)",
     rasterFunction: rasterFunctionUtils.colormap({
       colorRampName: "elevation1",
     }),
@@ -409,27 +413,75 @@ export function setupThematicLayers(viewElement) {
     ],
   });
 
+  const tarifzonenLayer = new MediaLayer({
+    source: [
+      new ImageElement({
+        image: "https://wms.zh.ch/ZVVZHWMS?service=WMS&version=1.3.0&request=GetMap&layers=tarifzonen&styles=default&crs=EPSG:2056&bbox=2654500,1222400,2720000,1300000&width=2000&height=2000&format=image/png&transparent=TRUE",
+        georeference: new ExtentAndRotationGeoreference({
+          extent: new Extent({
+            xmin: 8.155,
+            ymin: 47.146,
+            xmax: 9.03,
+            ymax: 47.84,
+            spatialReference: { wkid: 4326 },
+          }),
+          rotation: 0,
+        }),
+      }),
+    ],
+    opacity: 0.7,
+    visible: false,
+    id: "TL_Transport_ZVV_Tarifzonen",
+    title: "Tarifzonen ZVV ",
+  });
+
+  const zpassLayer = new MediaLayer({
+    source: [
+      new ImageElement({
+        image: "./zrhMap.jpg",
+        georeference: new ExtentAndRotationGeoreference({
+          extent: new Extent({
+            xmin: 7.87,
+            ymin: 46.87,
+            xmax: 9.23,
+            ymax: 47.85,
+            spatialReference: {
+              wkid: 4326,
+            },
+          }),
+          rotation: 0,
+        }),
+      }),
+    ],
+    opacity: 0.5,
+    visible: false,
+    id: "TL_Transport_Z-Pass_Tarifzonen",
+    title: "Tarifzonen Z-Pass",
+  });
+
   // const toilets = new GeoJSONLayer({
   //   url: "https://overpass-api.de/api/interpreter?data=%5Bout:json%5D%5Btimeout:25%5D;(node%5B%22amenity%22=%22toilets%22%5D(45.8,5.9,47.9,10.5);way%5B%22amenity%22=%22toilets%22%5D(45.8,5.9,47.9,10.5););out%20center;&format=geojson",
   //   title: "Public toilets (OSM)",
   // });
+
   viewElement.map.addMany([
-    // toilets,
-    fountainsZurich,
-    openRailwayMap,
-    transportLayer,
-    swissTopo,
-    canopyLayer,
-    biointactnessLayer,
+    iNaturalistLayer,
+    DEMLayer,
+    slopeLayer,
     landCoverLayer,
+    biointactnessLayer,
+    canopyLayer,
     ecosystemLayer,
     ndviLayer,
-    swissParksLayer,
     protectedAreasLayer,
+    swissParksLayer,
+    fountainsZurich,
+    tarifzonenLayer,
+    zpassLayer,
+    transportLayer,
     swissTopoHikingLayer,
-    slopeLayer,
-    DEMLayer,
-    iNaturalistLayer,
+    swissTopo,
+    openRailwayMap,
   ]);
 }
 export function setupThematicLayerList(viewElement) {
