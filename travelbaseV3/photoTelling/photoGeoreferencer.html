@@ -1,0 +1,1373 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Photo Georeferencer</title>
+    <link rel="icon" href="data:;base64,=" />
+    <script type="module" src="https://js.arcgis.com/5.1/"></script>
+    <style>
+      html,
+      body,
+      calcite-shell,
+      arcgis-scene {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+      }
+      body {
+        overflow: hidden;
+      }
+      #tools {
+        height: 100%;
+      }
+      #editor {
+        width: 100%;
+        min-height: 24rem;
+        max-height: 58vh;
+        overflow: auto;
+      }
+      .stack {
+        display: grid;
+        gap: 0.75rem;
+        padding: 0.75rem;
+      }
+      .row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      .row > * {
+        flex: 1;
+      }
+      .muted {
+        color: var(--calcite-color-text-2);
+        font-size: 0.82rem;
+        line-height: 1.35;
+      }
+      #photoList {
+        max-height: calc(100vh - 22rem);
+        overflow: auto;
+        border-block: 1px solid var(--calcite-color-border-3);
+      }
+      .photo-row {
+        display: grid;
+        grid-template-columns: 48px 1fr auto;
+        gap: 0.6rem;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+      }
+      .photo-row:hover,
+      .photo-row.selected {
+        background: var(--calcite-color-foreground-2);
+      }
+      .photo-row.time-warning {
+        color: var(--calcite-color-status-danger);
+        background: color-mix(in srgb, var(--calcite-color-status-danger) 12%, transparent);
+        border-inline-start: 4px solid var(--calcite-color-status-danger);
+      }
+      .photo-row.time-warning .photo-meta {
+        color: var(--calcite-color-status-danger);
+      }
+      .photo-row img {
+        width: 48px;
+        height: 38px;
+        object-fit: cover;
+        border-radius: 3px;
+        background: var(--calcite-color-foreground-3);
+      }
+      .photo-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.9rem;
+      }
+      .photo-meta {
+        font-size: 0.72rem;
+        color: var(--calcite-color-text-2);
+      }
+      #empty {
+        padding: 1rem;
+        text-align: center;
+      }
+      input[type="file"] {
+        display: none;
+      }
+      dialog {
+        width: min(34rem, calc(100vw - 2rem));
+        border: 0;
+        padding: 0;
+        background: transparent;
+      }
+      dialog::backdrop {
+        background: rgb(0 0 0 / 0.55);
+        backdrop-filter: blur(4px);
+      }
+      .mapping-grid {
+        display: grid;
+        grid-template-columns: 8rem minmax(0, 1fr);
+        gap: 0.75rem;
+        align-items: center;
+      }
+      .mapping-row {
+        display: contents;
+      }
+      .mapping-row[hidden] {
+        display: none;
+      }
+      #status {
+        min-height: 1.2rem;
+      }
+      .badge {
+        white-space: nowrap;
+      }
+      /* Photo queue layout */
+      #sidePanel {
+        --calcite-shell-panel-width: 25rem;
+        --calcite-shell-panel-max-width: 25rem;
+      }
+      .photo-row > div {
+        min-width: 0;
+      }
+      .photo-meta {
+        overflow-wrap: anywhere;
+      }
+      #photoSummary {
+        padding: 0 0.75rem 0.75rem;
+      }
+      @media (max-width: 700px) {
+        .mapping-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="calcite-mode-dark">
+    <calcite-shell>
+      <calcite-shell-panel slot="panel-start" position="start" display-mode="float-content" width-scale="l" id="sidePanel">
+        <calcite-panel id="tools" heading="Photo Georeferencer">
+          <calcite-tabs layout="center">
+            <calcite-tab-nav slot="title-group">
+              <calcite-tab-title selected>Data</calcite-tab-title>
+              <calcite-tab-title>Edit photos</calcite-tab-title>
+            </calcite-tab-nav>
+
+            <calcite-tab selected>
+              <div class="stack">
+                <calcite-button id="uploadPhotos" icon-start="images" width="full">Upload photos</calcite-button>
+                <div class="row">
+                  <calcite-button id="importData" appearance="outline" icon-start="upload">Import photo JSON</calcite-button>
+                  <calcite-button id="importGps" appearance="outline" icon-start="map">Import GPS files</calcite-button>
+                </div>
+                <calcite-button id="matchTrack" appearance="outline-fill" icon-start="link" width="full" disabled>Match unlocated photos</calcite-button>
+                <div id="status" class="muted" role="status">No data loaded.</div>
+              </div>
+              <div id="photoSummary" class="muted" role="status"></div>
+              <div id="photoList">
+                <div id="empty" class="muted">No photos loaded.</div>
+              </div>
+              <div class="stack">
+                <calcite-label>
+                  Export title
+                  <calcite-input-text id="exportTitle" value="data" required validation-message="Enter a valid file title."></calcite-input-text>
+                </calcite-label>
+                <calcite-button id="exportButton" icon-start="download" width="full" disabled>Download JSON (0 pics)</calcite-button>
+              </div>
+            </calcite-tab>
+
+            <calcite-tab>
+              <div class="stack" id="meshForm">
+                <calcite-input id="photoId" prefix-text="ID" disabled></calcite-input>
+                <div class="row">
+                  <calcite-action id="placePhoto" icon="pin-plus" text="Set photo location" disabled></calcite-action>
+                  <calcite-action id="removePhoto" icon="trash" text="Remove photo" disabled></calcite-action>
+                </div>
+                <calcite-label>Image orientation <calcite-slider id="orientation" min="-180" max="180" step="1" label-handles></calcite-slider></calcite-label>
+                <arcgis-editor id="editor" reference-element="scene" hide-create-features-section></arcgis-editor>
+              </div>
+            </calcite-tab>
+          </calcite-tabs>
+        </calcite-panel>
+      </calcite-shell-panel>
+
+      <arcgis-scene id="scene" basemap="satellite" ground="world-elevation" camera-position="8.2,46.7,85000" camera-tilt="55" camera-heading="15" popup-disabled>
+        <arcgis-home id="home" slot="top-left"></arcgis-home>
+        <arcgis-zoom slot="top-left"></arcgis-zoom>
+        <arcgis-navigation-toggle slot="top-left"></arcgis-navigation-toggle>
+        <arcgis-compass slot="top-left"></arcgis-compass>
+      </arcgis-scene>
+    </calcite-shell>
+
+    <dialog id="geojsonMappingDialog">
+      <calcite-panel heading="Map GeoJSON attributes">
+        <div class="stack">
+          <div class="muted">Common field names are preselected. Review or change each mapping before importing the GeoJSON.</div>
+          <div class="mapping-grid">
+            <div id="geoNameRow" class="mapping-row">
+              <span>Name</span>
+              <calcite-select id="geoNameField" label="Name attribute"></calcite-select>
+            </div>
+            <div class="mapping-row">
+              <span>Timestamp</span>
+              <calcite-select id="geoTimeField" label="Timestamp attribute"></calcite-select>
+            </div>
+            <div id="geoUrlRow" class="mapping-row">
+              <span>Image URL</span>
+              <calcite-select id="geoUrlField" label="Image URL attribute"></calcite-select>
+            </div>
+            <div id="geoSoundRow" class="mapping-row">
+              <span>Sound path</span>
+              <calcite-select id="geoSoundField" label="Sound file path attribute"></calcite-select>
+            </div>
+          </div>
+          <div id="geojsonMappingSummary" class="muted"></div>
+          <div class="row">
+            <calcite-button id="cancelGeojsonMapping" appearance="outline">Cancel</calcite-button>
+            <calcite-button id="confirmGeojsonMapping" icon-start="check">Import GeoJSON</calcite-button>
+          </div>
+        </div>
+      </calcite-panel>
+    </dialog>
+
+    <input id="photoInput" type="file" multiple accept="image/*" />
+    <input id="dataInput" type="file" multiple accept="application/json,.json" />
+    <input id="gpsInput" type="file" multiple accept=".gpx,.geojson,.json" />
+
+    <script type="module">
+      import { parseGpsFile, parseLocalTimestamp } from "./utils.js";
+
+      const scene = document.querySelector("#scene");
+      await scene.viewOnReady();
+      const view = scene.view;
+
+      const [FeatureLayer, GraphicsLayer, Graphic, Point, Mesh, Viewpoint, reactiveUtils] = await $arcgis.import([
+        "@arcgis/core/layers/FeatureLayer.js",
+        "@arcgis/core/layers/GraphicsLayer.js",
+        "@arcgis/core/Graphic.js",
+        "@arcgis/core/geometry/Point.js",
+        "@arcgis/core/geometry/Mesh.js",
+        "@arcgis/core/Viewpoint.js",
+        "@arcgis/core/core/reactiveUtils.js",
+      ]);
+
+      const state = {
+        basePaths: { photos: "", sounds: "", routes: "" },
+        photos: [],
+        tracks: [],
+        paths: [],
+        track: [],
+        trackKeys: new Set(),
+        files: new Map(),
+        objectUrls: new Map(),
+        selectedId: null,
+        nextOid: 1,
+        syncing: false,
+        matching: false,
+        busy: false,
+        placing: false,
+        importErrors: [],
+        pendingGeojsonDocuments: [],
+      };
+      const overlays = new Map();
+      const IMAGE_EXT = /\.(avif|bmp|gif|heic|heif|jpe?g|png|tiff?|webp)$/i;
+      const TRACK_TIME_KEYS = ["timestamp", "time", "datetime", "date", "recorded_at", "recordedAt", "captured_at", "capturedAt", "coordTimes", "coordinateTimes", "times", "timestamps"];
+      const URL_KEYS = ["url", "image", "imageUrl", "image_url", "photo", "src", "href", "path", "filename"];
+      const SOUND_KEYS = ["soundPath", "sound_path", "sound", "audioPath", "audio_path", "audio", "soundUrl", "sound_url", "audioUrl", "audio_url"];
+      const NAME_KEYS = ["name", "title", "label", "caption", "photo_name"];
+
+      const markerLayer = new FeatureLayer({
+        title: "Editable photo positions",
+        source: [],
+        objectIdField: "OBJECTID",
+        geometryType: "point",
+        spatialReference: { wkid: 4326 },
+        fields: [
+          { name: "OBJECTID", alias: "Object ID", type: "oid" },
+          { name: "photoId", alias: "Photo ID", type: "string" },
+          { name: "name", alias: "Name", type: "string" },
+          { name: "url", alias: "Image URL or path", type: "string" },
+          { name: "timestamp", alias: "Timestamp", type: "string" },
+          { name: "orientation", alias: "Heading", type: "double" },
+        ],
+        renderer: {
+          type: "simple",
+          symbol: {
+            type: "point-3d",
+            symbolLayers: [
+              {
+                type: "icon",
+                resource: { primitive: "circle" },
+                size: 9,
+                material: { color: [255, 255, 255, 0.9] },
+                outline: { color: [31, 41, 55, 0.9], size: 1 },
+              },
+            ],
+          },
+        },
+        popupTemplate: {
+          title: "{name}",
+          content: "{timestamp}<br>{url}",
+        },
+        elevationInfo: { mode: "relative-to-ground", offset: 3 },
+        editingEnabled: true,
+      });
+      const photoLayer = new GraphicsLayer({
+        title: "Photo previews",
+        elevationInfo: { mode: "relative-to-ground" },
+      });
+      const trackLayer = new GraphicsLayer({
+        title: "GPS tracks",
+        elevationInfo: { mode: "on-the-ground" },
+      });
+      scene.map.addMany([trackLayer, markerLayer, photoLayer]);
+
+      const $ = (selector) => document.querySelector(selector);
+      const status = (message, kind = "") => {
+        $("#status").textContent = [message, ...state.importErrors].join(" ");
+        $("#status").style.color = kind === "error" || state.importErrors.length ? "var(--calcite-color-status-danger)" : "";
+      };
+      const fileName = (path) =>
+        String(path || "")
+          .replace(/\\/g, "/")
+          .split("/")
+          .pop();
+      const finite = (value, fallback = 0) => (value != null && value !== "" && Number.isFinite(Number(value)) ? Number(value) : fallback);
+      const hasLocation = (photo) => Number.isFinite(photo?.location?.longitude) && Number.isFinite(photo?.location?.latitude) && Math.abs(photo.location.longitude) <= 180 && Math.abs(photo.location.latitude) <= 90;
+      const filenameKey = (url) => {
+        try {
+          return decodeURIComponent(fileName(new URL(url, location.href).pathname));
+        } catch {
+          return fileName(url);
+        }
+      };
+      const firstValue = (object, keys) => keys.map((key) => object?.[key]).find((value) => value !== undefined && value !== null && value !== "");
+      const parseTime = (value) => {
+        if (value instanceof Date) return value.getTime();
+        if (typeof value === "number") return value < 1e12 ? value * 1000 : value;
+        if (!value) return NaN;
+        const text = String(value);
+        const parsed = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(text) ? Date.parse(text) : parseLocalTimestamp(text);
+        return Number.isFinite(parsed) ? parsed : NaN;
+      };
+      const uniqueId = (preferred = "photo") => {
+        const existing = new Set(state.photos.map((photo) => photo.id));
+        let id =
+          String(preferred || "photo")
+            .replace(/[^a-zA-Z0-9_-]+/g, "-")
+            .replace(/^-|-$/g, "") || "photo";
+        if (!existing.has(id)) return id;
+        let number = 2;
+        while (existing.has(`${id}-${number}`)) number++;
+        return `${id}-${number}`;
+      };
+      const normalizePhoto = (raw, fallbackId) => {
+        if (!raw || typeof raw !== "object") return null;
+        const coordinates = raw.geometry?.coordinates;
+        const properties = raw.properties || raw;
+        const longitude = finite(raw.location?.longitude ?? raw.longitude ?? coordinates?.[0], NaN);
+        const latitude = finite(raw.location?.latitude ?? raw.latitude ?? coordinates?.[1], NaN);
+        const url = raw.url ?? firstValue(properties, URL_KEYS) ?? "";
+        if (!String(url).trim()) return null;
+        const id = String(raw.id ?? properties.id ?? fallbackId ?? fileName(url).replace(/\.[^.]+$/, "") ?? "photo");
+        const photo = {
+          id,
+          name: String(raw.name ?? properties.name ?? id),
+          location: { longitude, latitude },
+          timestamp: String(raw.timestamp ?? firstValue(properties, TRACK_TIME_KEYS) ?? raw.time ?? ""),
+          url: String(url),
+          orientation: finite(raw.orientation ?? properties.orientation ?? properties.heading, 0),
+          camera: raw.camera ?? properties.camera ?? null,
+          soundPath: raw.soundPath ?? firstValue(properties, SOUND_KEYS) ?? null,
+          match: null,
+          locationSource: raw.locationSource || "imported",
+        };
+        if (!hasLocation(photo)) photo.location = null;
+        return photo;
+      };
+      const displayUrl = (photo, inaturalistSize) => {
+        if (/^https?:\/\/static\.inaturalist\.org\//i.test(photo.url)) {
+          const sourceUrl = inaturalistSize ? photo.url.replace(/\/(?:square|small|medium|large|original)(?=\.[^./?#]+(?:[?#]|$))/i, `/${inaturalistSize}`) : photo.url;
+          return `https://images.weserv.nl/?url=${encodeURIComponent(sourceUrl)}`;
+        }
+        if (/^(https?:|data:|blob:)/i.test(photo.url)) return photo.url;
+        return state.objectUrls.get(photo.url) || photo.url;
+      };
+
+      function pointGraphic(photo) {
+        return new Graphic({
+          geometry: new Point({
+            longitude: photo.location.longitude,
+            latitude: photo.location.latitude,
+            spatialReference: { wkid: 4326 },
+          }),
+          attributes: {
+            OBJECTID: state.nextOid++,
+            photoId: photo.id,
+            name: photo.name,
+            url: photo.url,
+            timestamp: photo.timestamp,
+            orientation: photo.orientation,
+          },
+        });
+      }
+
+      function createIcon(photo, point) {
+        return new Graphic({
+          geometry: point,
+          attributes: { photoId: photo.id },
+          symbol: {
+            type: "picture-marker",
+            url: displayUrl(photo, "small"),
+            width: "58px",
+            height: "44px",
+          },
+        });
+      }
+
+      function createMesh(photo) {
+        const anchor = new Point({
+          longitude: photo.location.longitude,
+          latitude: photo.location.latitude,
+          z: 12,
+          spatialReference: { wkid: 4326 },
+        });
+        const geometry = Mesh.createPlane(anchor, {
+          size: { width: 80, height: 54 },
+          material: { colorTexture: displayUrl(photo, "large") },
+        });
+        geometry.rotate(66, 0, finite(photo.orientation));
+        return new Graphic({
+          geometry,
+          attributes: { photoId: photo.id },
+          symbol: { type: "mesh-3d", symbolLayers: [{ type: "fill" }] },
+          visible: false,
+        });
+      }
+
+      function rebuildOverlays() {
+        photoLayer.removeAll();
+        overlays.clear();
+        for (const photo of state.photos) {
+          if (!hasLocation(photo)) continue;
+          const point = new Point({
+            longitude: photo.location.longitude,
+            latitude: photo.location.latitude,
+            spatialReference: { wkid: 4326 },
+          });
+          const icon = createIcon(photo, point);
+          const mesh = createMesh(photo);
+          overlays.set(photo.id, { icon, mesh });
+          photoLayer.addMany([icon, mesh]);
+        }
+        updateRepresentations();
+      }
+
+      function distanceMeters(camera, photo) {
+        const lat1 = (camera.position.latitude * Math.PI) / 180;
+        const lat2 = (photo.location.latitude * Math.PI) / 180;
+        const dLat = lat2 - lat1;
+        const dLon = ((photo.location.longitude - camera.position.longitude) * Math.PI) / 180;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+        const horizontal = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        // Camera Z is absolute elevation, while photo meshes are positioned
+        // relative to terrain. Comparing those values prevents switching on
+        // high mountains, so proximity is intentionally horizontal here.
+        return horizontal;
+      }
+
+      function updateRepresentations() {
+        for (const photo of state.photos) {
+          const pair = overlays.get(photo.id);
+          if (!pair) continue;
+          const close = distanceMeters(view.camera, photo) < 1800;
+          pair.icon.visible = !close;
+          pair.mesh.visible = close;
+        }
+      }
+      reactiveUtils.watch(() => view.camera, updateRepresentations);
+
+      async function replaceFeatureSource() {
+        state.syncing = true;
+        try {
+          const old = await markerLayer.queryFeatures();
+          if (old.features.length) await markerLayer.applyEdits({ deleteFeatures: old.features });
+          state.nextOid = 1;
+          const additions = state.photos.filter(hasLocation).map(pointGraphic);
+          if (additions.length) await markerLayer.applyEdits({ addFeatures: additions });
+        } finally {
+          state.syncing = false;
+        }
+      }
+
+      async function render({ zoom = false } = {}) {
+        await replaceFeatureSource();
+        rebuildOverlays();
+        renderList();
+        updateButtons();
+        if (state.photos.length) {
+          const result = await markerLayer.queryExtent();
+          if (result.extent) {
+            const homeExtent = result.extent.expand(1.8);
+            $("#home").viewpoint = new Viewpoint({
+              targetGeometry: homeExtent,
+            });
+            if (zoom) view.goTo(homeExtent).catch(() => {});
+          }
+        }
+      }
+
+      function renderList() {
+        const list = $("#photoList");
+        if (!state.photos.length) {
+          list.innerHTML = '<div id="empty" class="muted">No georeferenced photos yet.</div>';
+          return;
+        }
+        list.innerHTML = "";
+        const photos = [...state.photos].sort((a, b) => Number(Boolean(b.match?.timeWarning)) - Number(Boolean(a.match?.timeWarning)));
+        for (const photo of photos) {
+          const row = document.createElement("div");
+          row.className = `photo-row${photo.id === state.selectedId ? " selected" : ""}${photo.match?.timeWarning ? " time-warning" : ""}`;
+          const image = document.createElement("img");
+          image.src = displayUrl(photo);
+          image.alt = "";
+          const info = document.createElement("div");
+          const name = document.createElement("div");
+          name.className = "photo-name";
+          name.textContent = photo.name || photo.id;
+          const meta = document.createElement("div");
+          meta.className = "photo-meta";
+          const gapText = photo.match?.timeWarning ? ` · WARNING: nearest track is ${photo.match.differenceHours.toFixed(1)} h away` : "";
+          const coordinates = hasLocation(photo) ? `${photo.location.latitude.toFixed(5)}, ${photo.location.longitude.toFixed(5)}` : "No coordinates";
+          meta.textContent = `${coordinates} · ${photo.timestamp || "no timestamp"}${photo.fileTime ? " · file time" : ""}${gapText}`;
+          info.append(name, meta);
+          const badge = document.createElement("calcite-badge");
+          badge.className = "badge";
+          badge.kind = photo.match?.timeWarning ? "danger" : "neutral";
+          badge.textContent = photo.match?.timeWarning ? ">24 h gap" : hasLocation(photo) ? "GPS" : "Needs GPS";
+          row.tabIndex = 0;
+          row.setAttribute("role", "button");
+          row.setAttribute("aria-label", photo.name || photo.id);
+          row.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              selectPhoto(photo.id, true);
+            }
+          });
+          row.append(image, info, badge);
+          row.addEventListener("click", () => selectPhoto(photo.id, true));
+          list.append(row);
+        }
+      }
+
+      function updateButtons() {
+        const ready = state.photos.filter(hasLocation).length;
+        const pending = state.photos.length - ready;
+        const title = getExportTitle();
+        $("#exportTitle").status = title ? "idle" : "invalid";
+        $("#exportButton").disabled = state.busy || state.matching || !ready || !title;
+        $("#matchTrack").disabled = state.busy || state.matching || !state.track.length || !state.photos.some((photo) => !hasLocation(photo) && Number.isFinite(parseLocalTimestamp(photo.timestamp)));
+        for (const id of ["uploadPhotos", "importData", "importGps", "confirmGeojsonMapping"]) {
+          $(`#${id}`).disabled = state.busy || state.matching;
+        }
+        for (const id of ["placePhoto", "removePhoto", "orientation"]) {
+          $(`#${id}`).disabled = state.busy || state.matching || !state.selectedId;
+        }
+        $("#placePhoto").active = state.placing;
+        $("#photoSummary").textContent = `${state.photos.length} photos · ${ready} georeferenced · ${pending} need GPS · ${state.track.length} GPS points`;
+        $("#exportButton").textContent = `Download JSON (${ready} ${ready === 1 ? "pic" : "pics"})`;
+      }
+
+      function selectPhoto(id, navigate = false) {
+        state.placing = false;
+        state.selectedId = id;
+        const photo = state.photos.find((item) => item.id === id);
+        renderList();
+        if (!photo) return clearMeshForm();
+        $("#photoId").value = photo.id;
+        $("#orientation").value = finite(photo.orientation);
+        updateButtons();
+        if (navigate && hasLocation(photo))
+          view
+            .goTo({
+              target: [photo.location.longitude, photo.location.latitude],
+              zoom: 17,
+              tilt: 70,
+            })
+            .catch(() => {});
+      }
+
+      function clearMeshForm() {
+        state.selectedId = null;
+        state.placing = false;
+        $("#photoId").value = "";
+        updateButtons();
+      }
+
+      function mergePhotos(incoming) {
+        const sourceKey = (photo) => {
+          if (!photo.url) return null;
+          try {
+            return new URL(photo.url, location.href).href;
+          } catch {
+            return photo.url;
+          }
+        };
+        const bySource = new Map();
+        const incomingSources = new Map();
+        for (const photo of incoming) {
+          if (!photo) continue;
+          const name = filenameKey(photo.url);
+          if (!incomingSources.has(name)) incomingSources.set(name, new Set());
+          incomingSources.get(name).add(sourceKey(photo));
+        }
+        for (const photo of state.photos) {
+          const key = sourceKey(photo);
+          if (key) bySource.set(key, photo);
+        }
+        let added = 0;
+        let updated = 0;
+        let skipped = 0;
+        for (const candidate of incoming) {
+          if (!candidate) continue;
+          const key = sourceKey(candidate);
+          let existing = key ? bySource.get(key) : null;
+          if (!existing && incomingSources.get(filenameKey(candidate.url)).size === 1 && !/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(candidate.url)) {
+            const uploaded = state.photos.filter((photo) => state.files.has(photo.url) && filenameKey(photo.url) === filenameKey(candidate.url));
+            if (uploaded.length === 1) existing = uploaded[0];
+          }
+          if (existing) {
+            if (hasLocation(candidate) && (!hasLocation(existing) || (candidate.locationSource === "imported" && ["embedded", "matched"].includes(existing.locationSource)))) {
+              Object.assign(existing, candidate, {
+                id: existing.id,
+                url: existing.url,
+              });
+              updated++;
+            } else {
+              skipped++;
+            }
+            continue;
+          }
+          candidate.id = uniqueId(candidate.id);
+          state.photos.push(candidate);
+          if (key) bySource.set(key, candidate);
+          added++;
+        }
+        return { added, updated, skipped };
+      }
+
+      async function readJsonFiles(files) {
+        const results = [];
+        for (const file of files) {
+          try {
+            results.push({ file, data: JSON.parse(await file.text()) });
+          } catch (error) {
+            state.importErrors.push(`Could not read ${file.name}: ${error.message}`);
+          }
+        }
+        return results;
+      }
+
+      async function readGpsFile(file) {
+        status(`Reading ${file.name}...`);
+        $("#importGps").loading = true;
+        try {
+          return await parseGpsFile(file);
+        } finally {
+          $("#importGps").loading = false;
+        }
+      }
+
+      async function importDataFiles(files) {
+        const documents = await readJsonFiles(files);
+        const imported = [];
+        for (const { file, data } of documents) {
+          if (!data || !Array.isArray(Array.isArray(data) ? data : data.photos)) {
+            state.importErrors.push(`${file.name}: expected a photos array.`);
+            continue;
+          }
+          if (["photos", "sounds", "routes"].some((kind) => state.basePaths[kind] && data.basePaths?.[kind] && state.basePaths[kind] !== data.basePaths[kind])) {
+            state.importErrors.push(`${file.name}: folder settings conflict with the loaded dataset; file skipped.`);
+            continue;
+          }
+          for (const kind of ["photos", "sounds", "routes"]) {
+            if (typeof data.basePaths?.[kind] === "string" && !state.basePaths[kind]) {
+              state.basePaths[kind] = data.basePaths[kind];
+            }
+          }
+          const dataset = Array.isArray(data) ? { photos: data } : data;
+          const photos = dataset.photos;
+          if (data && !Array.isArray(data)) {
+            for (const kind of ["tracks", "paths"]) {
+              for (const route of Array.isArray(dataset[kind]) ? dataset[kind] : []) {
+                if (!state[kind].some((existing) => JSON.stringify(existing) === JSON.stringify(route))) {
+                  state[kind].push(route);
+                }
+              }
+            }
+          }
+          if (!Array.isArray(photos)) continue;
+          photos.forEach((raw, index) => {
+            const photo = normalizePhoto(raw, `photo-${index + 1}`);
+            if (photo) imported.push(photo);
+            else state.importErrors.push(`${file.name}: photo ${index + 1} has no image URL and was skipped.`);
+          });
+        }
+        const result = mergePhotos(imported);
+        await render({ zoom: true });
+        status(`Data merged: ${result.added} photos added${result.skipped ? `; ${result.skipped} duplicates skipped` : ""}.`);
+      }
+
+      function geojsonTrackPoints(geojson, mapping = {}) {
+        const output = [];
+        const features = geojson.type === "FeatureCollection" ? geojson.features : geojson.type === "Feature" ? [geojson] : [{ type: "Feature", geometry: geojson, properties: {} }];
+        for (const feature of features) {
+          const geometry = feature?.geometry || {};
+          if (!Array.isArray(geometry.coordinates)) continue;
+          const properties = feature.properties || {};
+          const mappedTime = mapping.time ? properties[mapping.time] : undefined;
+          const baseTime = Array.isArray(mappedTime) ? undefined : (mappedTime ?? firstValue(properties, TRACK_TIME_KEYS));
+          const imageUrl = mapping.url ? properties[mapping.url] : firstValue(properties, URL_KEYS);
+          if (geometry.type === "Point" && !imageUrl) {
+            const time = parseTime(baseTime);
+            if (Number.isFinite(time))
+              output.push({
+                longitude: geometry.coordinates[0],
+                latitude: geometry.coordinates[1],
+                time,
+              });
+          }
+          const lines = geometry.type === "LineString" ? [geometry.coordinates] : geometry.type === "MultiLineString" ? geometry.coordinates : [];
+          const timeSets = (Array.isArray(mappedTime) ? mappedTime : undefined) || properties.coordTimes || properties.coordinateTimes || properties.times || properties.timestamps || [];
+          lines.forEach((line, lineIndex) => {
+            if (!Array.isArray(line)) return;
+            const times = Array.isArray(timeSets[0]) ? timeSets[lineIndex] : timeSets;
+            line.forEach((coordinate, index) => {
+              if (!Array.isArray(coordinate)) return;
+              const time = parseTime(times?.[index]);
+              if (Number.isFinite(time))
+                output.push({
+                  longitude: coordinate[0],
+                  latitude: coordinate[1],
+                  time,
+                });
+            });
+          });
+        }
+        return output.filter((point) => hasLocation({ location: point }) && Number.isFinite(point.time));
+      }
+
+      function addTimedPoints(points) {
+        const key = (point) => `${point.time}/${point.longitude}/${point.latitude}`;
+        const existing = state.trackKeys;
+        let added = 0;
+        for (const point of points) {
+          if (existing.has(key(point))) continue;
+          existing.add(key(point));
+          state.track.push(point);
+          added++;
+        }
+        return added;
+      }
+
+      function addTrackGraphics(features, mapping) {
+        const added = [];
+        for (const feature of features) {
+          const geometry = feature.geometry || {};
+          if (!["LineString", "MultiLineString"].includes(geometry.type)) continue;
+          const timedPoints = geojsonTrackPoints(feature, mapping);
+          if (!timedPoints.length) continue;
+          const paths = geometry.type === "LineString" ? [geometry.coordinates] : geometry.coordinates;
+          const graphic = new Graphic({
+            geometry: {
+              type: "polyline",
+              paths: paths
+                .map((path) =>
+                  Array.isArray(path)
+                    ? path
+                        .filter(
+                          (coordinate) =>
+                            Array.isArray(coordinate) &&
+                            hasLocation({
+                              location: {
+                                longitude: coordinate[0],
+                                latitude: coordinate[1],
+                              },
+                            }),
+                        )
+                        .map((coordinate) => [coordinate[0], coordinate[1]])
+                    : [],
+                )
+                .filter((path) => path.length > 1),
+              spatialReference: { wkid: 4326 },
+            },
+            attributes: {
+              name: feature.properties?.name || "GPS track",
+            },
+            symbol: {
+              type: "simple-line",
+              color: [0, 197, 255, 0.95],
+              width: 4,
+            },
+            popupTemplate: {
+              title: "{name}",
+              content: "Timestamped GPS track",
+            },
+          });
+          trackLayer.add(graphic);
+          added.push(graphic);
+        }
+        return added;
+      }
+
+      function addGpxPathGraphic(path) {
+        const singlePoint = path.points.length === 1;
+        const graphic = new Graphic({
+          geometry: singlePoint
+            ? {
+                type: "point",
+                longitude: path.points[0].longitude,
+                latitude: path.points[0].latitude,
+                spatialReference: { wkid: 4326 },
+              }
+            : {
+                type: "polyline",
+                paths: [path.points.map((point) => [point.longitude, point.latitude])],
+                spatialReference: { wkid: 4326 },
+              },
+          attributes: { name: path.name },
+          symbol: singlePoint
+            ? {
+                type: "simple-marker",
+                style: "circle",
+                color: [0, 197, 255, 1],
+                size: 7,
+                outline: { color: [255, 255, 255, 1], width: 1 },
+              }
+            : {
+                type: "simple-line",
+                color: [0, 197, 255, 0.95],
+                width: 4,
+              },
+          popupTemplate: {
+            title: "{name}",
+            content: "Timestamped GPX track",
+          },
+        });
+        trackLayer.add(graphic);
+        return [graphic];
+      }
+
+      async function importGpxFiles(files) {
+        const graphics = [];
+        let pathCount = 0;
+        let pointCount = 0;
+        let ignoredPaths = 0;
+        let failedFiles = 0;
+        for (const file of files) {
+          try {
+            const paths = await readGpsFile(file);
+            for (const path of paths) {
+              if (!path.points.length) {
+                ignoredPaths++;
+                continue;
+              }
+              const added = addTimedPoints(path.points);
+              if (!added) continue;
+              graphics.push(...addGpxPathGraphic(path));
+              pathCount++;
+              pointCount += added;
+            }
+          } catch (error) {
+            failedFiles++;
+            state.importErrors.push(`${file.name}: ${error.message}`);
+          }
+        }
+        state.track.sort((a, b) => a.time - b.time);
+        updateButtons();
+        if (graphics.length) view.goTo(graphics).catch(() => {});
+        status(
+          `GPX loaded: ${pathCount} path(s) and ${pointCount} timed points${ignoredPaths ? `; ${ignoredPaths} path(s) without enough timed points ignored` : ""}${failedFiles ? `; ${failedFiles} invalid file(s) ignored` : ""}.`,
+          pathCount ? "" : "error",
+        );
+      }
+
+      async function importGpsFiles(files) {
+        const gpx = files.filter((file) => /\.gpx$/i.test(file.name));
+        const geojson = files.filter((file) => /\.(geojson|json)$/i.test(file.name));
+        if (gpx.length) await importGpxFiles(gpx);
+        if (geojson.length) await prepareGeojsonMapping(geojson);
+      }
+
+      function geojsonFeatures(documents) {
+        return documents.flatMap(({ data }) => {
+          if (data?.type === "FeatureCollection") return Array.isArray(data.features) ? data.features.filter(Boolean) : [];
+          if (data?.type === "Feature") return [data];
+          if (["Point", "LineString", "MultiLineString"].includes(data?.type)) {
+            return [
+              {
+                type: "Feature",
+                geometry: data,
+                properties: data.properties || {},
+              },
+            ];
+          }
+          return [];
+        });
+      }
+
+      function mappedField(properties, field) {
+        return field ? properties?.[field] : undefined;
+      }
+
+      function populateMappingSelect(select, fields, commonKeys, optional = true) {
+        select.innerHTML = "";
+        if (optional) {
+          const none = document.createElement("calcite-option");
+          none.value = "";
+          none.textContent = "Not mapped";
+          select.append(none);
+        }
+        for (const field of fields) {
+          const option = document.createElement("calcite-option");
+          option.value = field;
+          option.textContent = field;
+          select.append(option);
+        }
+        const lookup = new Map(fields.map((field) => [field.toLowerCase(), field]));
+        const preferred = commonKeys.map((key) => lookup.get(key.toLowerCase())).find(Boolean);
+        select.value = preferred || (optional ? "" : fields[0] || "");
+      }
+
+      async function prepareGeojsonMapping(files) {
+        const documents = [];
+        for (const file of files) {
+          try {
+            documents.push({ file, data: await readGpsFile(file) });
+          } catch (error) {
+            state.importErrors.push(`${file.name}: ${error.message}`);
+          }
+        }
+        const features = geojsonFeatures(documents);
+        const hasTracks = features.some((feature) => ["LineString", "MultiLineString"].includes(feature.geometry?.type));
+        const hasPhotoPoints = features.some((feature) => feature.geometry?.type === "Point");
+        const fields = [...new Set(features.flatMap((feature) => Object.keys(feature.properties || {})))].sort((a, b) => a.localeCompare(b));
+        if (!features.length || !fields.length) {
+          status(hasTracks ? "Track ignored because it has no timestamp attributes." : "No GeoJSON features with attributes were found.", "error");
+          return;
+        }
+        state.pendingGeojsonDocuments = documents;
+        if (features.every((feature) => geojsonTrackPoints(feature).length || (feature.geometry?.type === "Point" && firstValue(feature.properties, URL_KEYS)))) {
+          await importMappedGeojson({});
+          return;
+        }
+        $("#geoNameRow").hidden = !hasPhotoPoints;
+        $("#geoUrlRow").hidden = !hasPhotoPoints;
+        $("#geoSoundRow").hidden = !hasPhotoPoints;
+        if (hasPhotoPoints) {
+          populateMappingSelect($("#geoNameField"), fields, NAME_KEYS);
+          populateMappingSelect($("#geoUrlField"), fields, URL_KEYS);
+          populateMappingSelect($("#geoSoundField"), fields, SOUND_KEYS);
+        } else {
+          $("#geoNameField").value = "";
+          $("#geoUrlField").value = "";
+          $("#geoSoundField").value = "";
+        }
+        populateMappingSelect($("#geoTimeField"), fields, TRACK_TIME_KEYS);
+        $("#geojsonMappingSummary").textContent =
+          hasTracks && !hasPhotoPoints
+            ? `${features.length} track feature(s) found. Select the per-coordinate timestamp array; tracks without valid timestamps will be ignored.`
+            : `${features.length} features and ${fields.length} attributes found in ${documents.length} file(s).`;
+        $("#geojsonMappingDialog").showModal();
+      }
+
+      async function importMappedGeojson(mapping) {
+        const documents = state.pendingGeojsonDocuments;
+        mapping ||= {
+          name: $("#geoNameField").value,
+          time: $("#geoTimeField").value,
+          url: $("#geoUrlField").value,
+          sound: $("#geoSoundField").value,
+        };
+        const photoCandidates = [];
+        const importedTrackGraphics = [];
+        let trackCount = 0;
+        let ignoredTracks = 0;
+        for (const document of documents) {
+          const features = geojsonFeatures([document]);
+          for (const [index, feature] of features.entries()) {
+            if (feature.geometry?.type !== "Point") continue;
+            const properties = feature.properties || {};
+            const url = mappedField(properties, mapping.url) ?? firstValue(properties, URL_KEYS);
+            if (url)
+              photoCandidates.push(
+                normalizePhoto(
+                  {
+                    ...feature,
+                    name: mappedField(properties, mapping.name) || firstValue(properties, NAME_KEYS) || `GeoJSON photo ${index + 1}`,
+                    timestamp: mappedField(properties, mapping.time) ?? firstValue(properties, TRACK_TIME_KEYS),
+                    url,
+                    soundPath: mappedField(properties, mapping.sound) ?? firstValue(properties, SOUND_KEYS) ?? null,
+                  },
+                  `geo-photo-${index + 1}`,
+                ),
+              );
+          }
+          ignoredTracks += features.filter((feature) => ["LineString", "MultiLineString"].includes(feature.geometry?.type) && geojsonTrackPoints(feature, mapping).length === 0).length;
+          const points = features.flatMap((feature) => geojsonTrackPoints(feature, mapping));
+          const added = addTimedPoints(points);
+          if (added) importedTrackGraphics.push(...addTrackGraphics(features, mapping));
+          trackCount += added;
+        }
+        state.track.sort((a, b) => a.time - b.time);
+        const result = mergePhotos(photoCandidates);
+        if (result.added || result.updated) {
+          await render({ zoom: true });
+        } else {
+          updateButtons();
+        }
+        if (!photoCandidates.length && importedTrackGraphics.length) {
+          view.goTo(importedTrackGraphics).catch(() => {});
+        }
+        status(
+          `GeoJSON loaded: ${result.added} photos added and ${trackCount} timed track points${result.skipped ? `; ${result.skipped} duplicate photos skipped` : ""}${ignoredTracks ? `; ${ignoredTracks} track(s) without timestamps ignored` : ""}.`,
+        );
+        state.pendingGeojsonDocuments = [];
+        $("#geojsonMappingDialog").close();
+      }
+
+      async function uploadPhotos(files) {
+        let added = 0;
+        let skipped = 0;
+        const conflicts = [];
+        for (const file of files) {
+          if (!file.type.startsWith("image/") && !IMAGE_EXT.test(file.name)) continue;
+          const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+          const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+          if ([...state.files.values()].some((entry) => entry.hash === hash)) {
+            skipped++;
+            continue;
+          }
+          const candidates = state.photos.filter((photo) => !/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(photo.url) && filenameKey(photo.url) === file.name);
+          if (candidates.length > 1 || (candidates.length === 1 && state.files.has(candidates[0].url))) {
+            conflicts.push(file.name);
+            continue;
+          }
+          let metadata;
+          try {
+            metadata = await readPhotoMetadata(file);
+          } catch (error) {
+            state.importErrors.push(`${file.name}: metadata reader unavailable (${error.message}).`);
+            continue;
+          }
+          const hasSavedTime = Boolean(candidates[0]?.timestamp);
+          let photo = candidates[0];
+          if (!photo) {
+            photo = normalizePhoto({
+              id: file.name.replace(/\.[^.]+$/, ""),
+              url: encodeURIComponent(file.name),
+              ...metadata,
+            });
+            mergePhotos([photo]);
+            added++;
+          } else {
+            if (!hasLocation(photo) && hasLocation(metadata)) {
+              photo.location = metadata.location;
+              photo.locationSource = "embedded";
+            }
+            if (!photo.timestamp) {
+              photo.timestamp = metadata.timestamp;
+              photo.fileTime = metadata.fileTime;
+            }
+          }
+          if (!hasSavedTime) {
+            photo.matchTimestamp = metadata.matchTimestamp;
+            photo.fileTime = metadata.fileTime;
+          }
+          const path = photo.url;
+          const objectUrl = URL.createObjectURL(file);
+          state.files.set(path, { file, hash });
+          state.objectUrls.set(path, objectUrl);
+        }
+        await render({ zoom: true });
+        status(`${added} photos added; ${skipped} identical files skipped${conflicts.length ? `; conflicting filenames: ${conflicts.join(", ")}` : ""}.`, conflicts.length ? "error" : "");
+      }
+
+      let exifReader;
+      async function readPhotoMetadata(file) {
+        exifReader ||= import("https://esm.sh/exifr@7.1.3").catch((error) => {
+          exifReader = null;
+          throw error;
+        });
+        const exifr = await exifReader;
+        let tags = {};
+        try {
+          tags =
+            (await exifr.parse(file, {
+              reviveValues: false,
+              pick: ["DateTimeOriginal", "CreateDate", "ModifyDate", "OffsetTimeOriginal", "GPSLatitude", "GPSLongitude", "GPSLatitudeRef", "GPSLongitudeRef"],
+            })) || {};
+        } catch {}
+        return photoMetadata(tags, file.lastModified);
+      }
+
+      function photoMetadata(tags, lastModified) {
+        const captured = tags.DateTimeOriginal || tags.CreateDate || tags.ModifyDate;
+        const timestamp = captured ? String(captured).replace(/^(\d{4}):(\d{2}):(\d{2})[ T]/, "$1-$2-$3T") : new Date(lastModified).toISOString();
+        const coordinate = (value, reference) => {
+          const degrees = Array.isArray(value) ? value[0] + value[1] / 60 + value[2] / 3600 : finite(value, NaN);
+          return /^[SW]/i.test(reference || "") ? -Math.abs(degrees) : degrees;
+        };
+        const location = {
+          longitude: coordinate(tags.longitude ?? tags.GPSLongitude, tags.GPSLongitudeRef),
+          latitude: coordinate(tags.latitude ?? tags.GPSLatitude, tags.GPSLatitudeRef),
+        };
+        return {
+          timestamp,
+          location: hasLocation({ location }) ? location : null,
+          locationSource: "embedded",
+          fileTime: !captured,
+          matchTimestamp: captured && /^[+-]\d{2}:\d{2}$/.test(tags.OffsetTimeOriginal || "") ? Date.parse(timestamp + tags.OffsetTimeOriginal) : parseLocalTimestamp(timestamp),
+        };
+      }
+
+      function nearestTrackPoint(timestamp) {
+        let low = 0;
+        let high = state.track.length - 1;
+        while (low < high) {
+          const middle = Math.floor((low + high) / 2);
+          if (state.track[middle].time < timestamp) low = middle + 1;
+          else high = middle;
+        }
+        const after = state.track[low];
+        const before = state.track[Math.max(0, low - 1)];
+        return Math.abs(after.time - timestamp) < Math.abs(before.time - timestamp) ? after : before;
+      }
+
+      async function matchFolderToTrack() {
+        if (state.matching || !state.track.length) return;
+        state.matching = true;
+        updateButtons();
+        try {
+          const matched = [];
+          for (const photo of state.photos) {
+            if (hasLocation(photo)) continue;
+            const captured = photo.matchTimestamp ?? parseLocalTimestamp(photo.timestamp);
+            if (!Number.isFinite(captured)) continue;
+            const point = nearestTrackPoint(captured);
+            const differenceMilliseconds = Math.abs(point.time - captured);
+            photo.location = {
+              longitude: point.longitude,
+              latitude: point.latitude,
+            };
+            photo.locationSource = "matched";
+            photo.match = {
+              differenceHours: differenceMilliseconds / 3_600_000,
+              timeWarning: differenceMilliseconds > 86_400_000,
+            };
+            matched.push(photo);
+          }
+          await render({ zoom: true });
+          const warningCount = matched.filter((photo) => photo?.match?.timeWarning).length;
+          status(`Matched ${matched.length} photos${warningCount ? `; ${warningCount} match(es) have a time gap over 24 hours` : ""}.`);
+        } catch (error) {
+          status(error.message, "error");
+        } finally {
+          state.matching = false;
+          updateButtons();
+        }
+      }
+
+      function getExportTitle() {
+        const title = $("#exportTitle")
+          .value.trim()
+          .replace(/\.json$/i, "");
+        if (!title || /[<>:"/\\|?*\u0000-\u001f]/.test(title) || /[. ]$/.test(title) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(title)) return "";
+        return title;
+      }
+
+      function exportData() {
+        const title = getExportTitle();
+        if (!title) return status("Enter a valid export title.", "error");
+        const dataset = {
+          basePaths: {
+            photos: state.basePaths.photos || `./${encodeURIComponent(title)}_img/`,
+            sounds: state.basePaths.sounds || "./sounds/",
+            routes: state.basePaths.routes || "./",
+          },
+          photos: state.photos,
+          tracks: state.tracks,
+          paths: state.paths,
+        };
+        const photos = dataset.photos.filter(hasLocation).map((photo) => ({
+          id: photo.id,
+          name: photo.name || photo.id,
+          location: {
+            longitude: finite(photo.location.longitude),
+            latitude: finite(photo.location.latitude),
+          },
+          timestamp: photo.timestamp || "",
+          url: photo.url,
+          orientation: finite(photo.orientation),
+          soundPath: photo.soundPath ?? null,
+        }));
+        const blob = new Blob([JSON.stringify({ ...dataset, photos }, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `${title}.json`;
+        anchor.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        const pending = state.photos.length - photos.length;
+        status(`Exported ${photos.length} photos${pending ? `; ${pending} without coordinates omitted` : ""}.`);
+      }
+
+      function updateOrientation() {
+        const photo = state.photos.find((item) => item.id === state.selectedId);
+        if (!photo) return;
+        photo.orientation = finite($("#orientation").value);
+        photo.match = null;
+        rebuildOverlays();
+        renderList();
+        status(`Orientation for ${photo.id}: ${photo.orientation}° (export to save).`);
+      }
+
+      function releasePhoto(photo) {
+        const url = state.objectUrls.get(photo.url);
+        if (url) URL.revokeObjectURL(url);
+        state.objectUrls.delete(photo.url);
+        state.files.delete(photo.url);
+        if (state.selectedId === photo.id) clearMeshForm();
+      }
+
+      markerLayer.on("edits", async () => {
+        if (state.syncing) return;
+        const result = await markerLayer.queryFeatures({
+          where: "1=1",
+          outFields: ["*"],
+          returnGeometry: true,
+        });
+        const byId = new Map(result.features.map((feature) => [feature.attributes.photoId, feature]));
+        for (const photo of state.photos) {
+          if (hasLocation(photo) && !byId.has(photo.id)) releasePhoto(photo);
+        }
+        state.photos = state.photos.filter((photo) => !hasLocation(photo) || byId.has(photo.id));
+        for (const photo of state.photos) {
+          const feature = byId.get(photo.id);
+          if (!feature) continue;
+          const wasEdited =
+            Math.abs(feature.geometry.longitude - photo.location.longitude) > 1e-9 ||
+            Math.abs(feature.geometry.latitude - photo.location.latitude) > 1e-9 ||
+            feature.attributes.name !== photo.name ||
+            feature.attributes.timestamp !== photo.timestamp ||
+            feature.attributes.url !== photo.url ||
+            finite(feature.attributes.orientation) !== finite(photo.orientation);
+          photo.location = {
+            longitude: feature.geometry.longitude,
+            latitude: feature.geometry.latitude,
+          };
+          photo.name = feature.attributes.name ?? photo.name;
+          photo.timestamp = feature.attributes.timestamp ?? photo.timestamp;
+          photo.url = feature.attributes.url ?? photo.url;
+          photo.orientation = finite(feature.attributes.orientation, photo.orientation);
+          if (wasEdited) {
+            photo.match = null;
+            photo.locationSource = "manual";
+          }
+        }
+        rebuildOverlays();
+        renderList();
+        updateButtons();
+        status("ArcGIS Editor changes synchronized. Export to save them.");
+      });
+
+      view.on("click", async (event) => {
+        if (state.placing && state.selectedId && event.mapPoint && !state.busy) {
+          const photo = state.photos.find((item) => item.id === state.selectedId);
+          await runOperation(async () => {
+            photo.location = {
+              longitude: event.mapPoint.longitude,
+              latitude: event.mapPoint.latitude,
+            };
+            photo.locationSource = "manual";
+            photo.match = null;
+            state.placing = false;
+            await render();
+            status(`Location updated for ${photo.name}.`);
+          });
+          return;
+        }
+        const response = await view.hitTest(event, {
+          include: [photoLayer, markerLayer],
+        });
+        const result = response.results.find((item) => item.graphic?.attributes?.photoId);
+        if (result) selectPhoto(result.graphic.attributes.photoId);
+      });
+
+      let operation = Promise.resolve();
+      function runOperation(action) {
+        operation = operation.then(async () => {
+          state.busy = true;
+          state.importErrors = [];
+          updateButtons();
+          try {
+            await action();
+          } catch (error) {
+            status(error.message, "error");
+          } finally {
+            state.busy = false;
+            updateButtons();
+          }
+        });
+        return operation;
+      }
+
+      $("#uploadPhotos").addEventListener("click", () => $("#photoInput").click());
+      $("#placePhoto").addEventListener("click", () => {
+        state.placing = !state.placing;
+        updateButtons();
+      });
+      $("#removePhoto").addEventListener("click", () =>
+        runOperation(async () => {
+          const photo = state.photos.find((item) => item.id === state.selectedId);
+          if (!photo) return;
+          state.photos = state.photos.filter((item) => item !== photo);
+          releasePhoto(photo);
+          await render();
+          status(`Removed ${photo.name}.`);
+        }),
+      );
+      $("#photoInput").addEventListener("change", async (event) => {
+        const files = [...event.target.files];
+        event.target.value = "";
+        await runOperation(() => uploadPhotos(files));
+      });
+      $("#importData").addEventListener("click", () => $("#dataInput").click());
+      $("#dataInput").addEventListener("change", async (event) => {
+        const files = [...event.target.files];
+        event.target.value = "";
+        await runOperation(() => importDataFiles(files));
+      });
+      $("#importGps").addEventListener("click", () => $("#gpsInput").click());
+      $("#gpsInput").addEventListener("change", async (event) => {
+        const files = [...event.target.files];
+        event.target.value = "";
+        await runOperation(() => importGpsFiles(files));
+      });
+      $("#cancelGeojsonMapping").addEventListener("click", () => {
+        state.pendingGeojsonDocuments = [];
+        $("#geojsonMappingDialog").close();
+      });
+      $("#confirmGeojsonMapping").addEventListener("click", () => runOperation(importMappedGeojson));
+      $("#matchTrack").addEventListener("click", () => runOperation(matchFolderToTrack));
+      $("#exportButton").addEventListener("click", exportData);
+      $("#exportTitle").addEventListener("calciteInputTextInput", updateButtons);
+      $("#orientation").addEventListener("calciteSliderInput", updateOrientation);
+      $("#orientation").addEventListener("input", updateOrientation);
+
+      await customElements.whenDefined("calcite-button");
+      updateButtons();
+      status("No photos loaded.");
+    </script>
+  </body>
+</html>

@@ -24,10 +24,18 @@ export async function handleAuthRedirect(dbx, dbxAuth, REDIRECT_URI) {
     const accessToken = token?.result?.access_token;
     if (!accessToken) throw new Error("No access token");
     dbxAuth.setAccessToken(accessToken);
+    sessionStorage.setItem("travelbaseDropboxAccessToken", accessToken);
     sessionStorage.removeItem("codeVerifier");
 
     // clean URL
     window.history.replaceState({}, document.title, window.location.pathname);
+
+    const returnTo = sessionStorage.getItem("travelbaseDropboxReturnTo");
+    if (returnTo) {
+      sessionStorage.removeItem("travelbaseDropboxReturnTo");
+      window.location.replace(returnTo);
+      return false;
+    }
 
     return true;
   } catch (err) {

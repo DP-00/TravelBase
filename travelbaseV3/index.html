@@ -151,7 +151,8 @@
           </calcite-tabs>
         </arcgis-expand>
         <arcgis-expand group="bottom-right" expand-icon="tour" slot="bottom-right">
-          <div>Tours: todo</div>
+          <calcite-link icon-start="images" href="./photoTelling/photoGeoreferencer.html" target="_blank">Photo Georeferencer</calcite-link>
+          <calcite-link icon-start="images" href="./photoTelling/photoTelling.html" target="_blank">PhotoTelling</calcite-link>
         </arcgis-expand>
         <arcgis-popup slot="popup" hide-feature-navigation></arcgis-popup>
       </arcgis-scene>
@@ -179,13 +180,13 @@
     const webMercatorUtils = await $arcgis.import("@arcgis/core/geometry/support/webMercatorUtils.js");
 
     import { doAuth, fetchDropboxFile, saveAllLayersToDropbox, handleAuthRedirect } from "./dropbox.js";
+    import { DROPBOX_CLIENT_ID, DROPBOX_REDIRECT_URI } from "./dropboxConfig.js";
     import { setupBookmarks, setupBasemaps, setupThematicLayers, setupThematicLayerList } from "./mapControls.js";
     import { setupModeFilter, setupTripFilter, setupLayerFilter } from "./mapFilter.js";
     import { setupMainLayers, setupMainLayerList, setupPopup, setupSearch } from "./mapData.js";
 
-    const REDIRECT_URI = `${window.location.origin}/TravelBase/travelbaseV3/`; //"http://localhost:8000/";
-    // const REDIRECT_URI = "http://localhost:8000/"; //"http://localhost:8000/";
-    const CLIENT_ID = "2h95rnvy2dubcsw"; // <-- your client id
+    const REDIRECT_URI = DROPBOX_REDIRECT_URI;
+    const CLIENT_ID = DROPBOX_CLIENT_ID;
     let dbxAuth = new Dropbox.DropboxAuth({ clientId: CLIENT_ID });
     let dbx = new Dropbox.Dropbox({ auth: dbxAuth });
 
@@ -204,6 +205,9 @@
 
     const viewElement = document.getElementById("viewElement");
     await viewElement.viewOnReady();
+
+    document.querySelector("arcgis-daylight").localDate = new Date();
+
     initialized = true;
     viewElement.view.effects = {
       glow: {
@@ -217,7 +221,7 @@
     setupThematicLayers(viewElement);
     setupThematicLayerList(viewElement);
 
-    const authFinished = await handleAuthRedirect(dbx, dbxAuth, REDIRECT_URI);
+    const authFinished = await handleAuthRedirect(dbx, dbxAuth, DROPBOX_REDIRECT_URI);
     if (authFinished) {
       await initializeApp(dbx, viewElement);
     }
@@ -227,7 +231,7 @@
         saveAction.setAttribute("loading", "");
 
         if (!mainDataLoaded) {
-          const ok = await doAuth(dbxAuth, REDIRECT_URI);
+          const ok = await doAuth(dbxAuth, DROPBOX_REDIRECT_URI);
           if (!ok) return;
 
           await initializeApp(dbx, viewElement);

@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
+    <title>PhotoTelling</title>
+    <link rel="icon" href="data:;base64,=" />
+    <link rel="stylesheet" href="./photoTelling.css" />
+    <script type="module" src="https://js.arcgis.com/5.1/"></script>
+    <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
+  </head>
+  <body class="calcite-mode-dark">
+    <arcgis-scene id="scene" basemap="satellite" ground="world-elevation" camera-position="8.22, 46.82, 78000" camera-tilt="62" camera-heading="18" popup-disabled>
+      <arcgis-home slot="top-right" visual-scale="s"></arcgis-home>
+      <arcgis-zoom slot="top-right" visual-scale="s"></arcgis-zoom>
+      <arcgis-navigation-toggle id="navigationToggle" slot="top-right" visual-scale="s"></arcgis-navigation-toggle>
+      <arcgis-compass slot="top-right" visual-scale="s"></arcgis-compass>
+      <arcgis-time-slider id="photoTimeSlider" slot="bottom-left" layout="compact" mode="cumulative-from-start" time-zone="UTC" time-visible loop hidden></arcgis-time-slider>
+      <arcgis-expand id="settingsExpand" slot="bottom-right" visual-scale="s" icon="gear" expand-icon="gear" expanded>
+        <calcite-panel class="calcite-mode-dark" style="width: 24rem; max-width: 88vw">
+          <div slot="header-content">
+            <calcite-segmented-control id="mode" width="full">
+              <calcite-segmented-control-item value="free" checked>Free explore</calcite-segmented-control-item>
+              <calcite-segmented-control-item value="side">Side Pane</calcite-segmented-control-item>
+              <calcite-segmented-control-item value="scroll">Scroll</calcite-segmented-control-item>
+              <calcite-segmented-control-item value="flyover">Flyover</calcite-segmented-control-item>
+            </calcite-segmented-control>
+          </div>
+
+          <calcite-block-group scale="s">
+            <calcite-block id="modeSettingsBlock" heading="Mode settings" icon-start="sliders-horizontal" collapsible expanded scale="s">
+              <div id="freeSettings" class="stack">
+                <div class="setting-row">
+                  <span>Marker</span>
+                  <calcite-segmented-control id="freePhotoStyle" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="point" checked>Point</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="image">Photo</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="circle">Circle</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+                <div class="setting-row">
+                  <span>Style</span>
+                  <calcite-segmented-control id="freePhotoTreatment" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="none" checked>None</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="border">Border</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="glow">Glow</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+                <div class="setting-row">
+                  <span>Size</span>
+                  <calcite-segmented-control id="photoSize" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="0.5">XS</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="0.7">S</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="0.9" checked>M</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="1.15">L</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="1.4">XL</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+              </div>
+
+              <div id="sideSettings" class="stack" hidden>
+                <div class="setting-row">
+                  <span>Layout</span>
+                  <calcite-segmented-control id="paneType" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="grid" checked>Grid</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="list">List</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="timeline">Timeline</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+                <div id="sideMapModeSettings" class="stack">
+                  <div id="mapAreaRow" class="setting-row">
+                    <span>Pane</span>
+                    <calcite-segmented-control id="mapAreaControl" width="full" scale="s" appearance="outline">
+                      <calcite-segmented-control-item value="narrow">Narrow</calcite-segmented-control-item>
+                      <calcite-segmented-control-item value="normal" checked>Normal</calcite-segmented-control-item>
+                      <calcite-segmented-control-item value="wide">Wide</calcite-segmented-control-item>
+                    </calcite-segmented-control>
+                  </div>
+                  <div class="setting-row">
+                    <span>Order</span>
+                    <calcite-segmented-control id="paneOrder" width="full" scale="s" appearance="outline">
+                      <calcite-segmented-control-item value="config">JSON</calcite-segmented-control-item>
+                      <calcite-segmented-control-item value="time" checked>Time ↓</calcite-segmented-control-item>
+                      <calcite-segmented-control-item value="time-desc">Time ↑</calcite-segmented-control-item>
+                      <calcite-segmented-control-item value="title">Title</calcite-segmented-control-item>
+                    </calcite-segmented-control>
+                  </div>
+
+                  <div class="setting-row">
+                    <span>Photos</span>
+                    <calcite-segmented-control id="visibleArea" width="full" scale="s" appearance="outline">
+                      <calcite-segmented-control-item value="all">All</calcite-segmented-control-item>
+                      <calcite-segmented-control-item value="visible" checked>Visible area</calcite-segmented-control-item>
+                    </calcite-segmented-control>
+                  </div>
+                </div>
+
+                <div class="setting-row">
+                  <span>Hover</span>
+                  <calcite-segmented-control id="sideInteraction" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="both" checked>Both</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="panel-map">Pane → Map</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="map-panel">Map → Pane</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="none">Off</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+                <div class="setting-row">
+                  <span>Autoplay</span>
+                  <calcite-segmented-control id="sideAutoplayAction" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="hover" checked>Hover</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="click">Click</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+              </div>
+
+              <div id="scrollSettings" class="stack" hidden>
+                <div class="setting-row">
+                  <span>Camera</span>
+                  <calcite-segmented-control id="scrollCamera" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="hover" checked>Follow</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="click">Focus</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="orbit">Orbit</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+                <div class="setting-row">
+                  <span>Speed</span>
+                  <calcite-segmented-control id="scrollSpeed" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="0.5">0.5x</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="1" checked>1x</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="3">3x</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+                <div id="scrollMapModeSettings" class="stack"></div>
+              </div>
+
+              <div id="flyoverSettings" class="stack" hidden>
+                <div class="setting-row">
+                  <span>Day</span>
+                  <calcite-select id="flyoverDay" label="Flyover day" scale="s"></calcite-select>
+                </div>
+                <div class="setting-row">
+                  <span>Speed</span>
+                  <calcite-segmented-control id="flyoverSpeed" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="10">10x</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="50">50x</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="100" checked>100x</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="500">500x</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="1000">1000x</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+                <div class="setting-row">
+                  <span>Camera</span>
+                  <calcite-segmented-control id="flyoverCamera" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="back" checked>Back</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="front">Front</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="free">Free</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+                <div class="setting-row">
+                  <span>Detail</span>
+                  <calcite-segmented-control id="flyoverDetail" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="low" checked>Low</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="medium">Medium</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="high">High</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+                <div class="setting-row">
+                  <span>Height</span>
+                  <calcite-slider id="flyoverHeight" min="2" max="3000" step="2" value="2000" scale="s" label-handles></calcite-slider>
+                </div>
+              </div>
+            </calcite-block>
+
+            <calcite-block id="timelineSettingsBlock" heading="Timeline settings" icon-start="clock" collapsible expanded scale="s">
+              <div class="stack">
+                <div class="setting-row">
+                  <span>Timeline</span>
+                  <calcite-segmented-control id="timelineMode" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="none" checked>None</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="cumulative-from-start">To date</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="instant">Moment</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="time-window">Window</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+                <div class="setting-row">
+                  <span>Timing</span>
+                  <calcite-segmented-control id="timelinePacing" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="equal" checked>Equal</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="actual">Actual</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+                <div class="setting-row">
+                  <label for="timelineSpeed">Speed</label>
+                  <calcite-slider id="timelineSpeed" min="0.25" max="5" step="0.25" value="1" scale="s" label-handles></calcite-slider>
+                </div>
+              </div>
+            </calcite-block>
+
+            <calcite-block heading="Map settings" icon-start="map" collapsible expanded scale="s">
+              <div class="stack">
+                <div class="setting-row">
+                  <span>Basemap</span>
+                  <calcite-segmented-control id="basemap" width="full" scale="s" appearance="outline">
+                    <calcite-segmented-control-item value="satellite" checked>Imagery</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="topo-vector">Topo</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="dark-gray-vector">Dark</calcite-segmented-control-item>
+                    <calcite-segmented-control-item value="plain-elevation">Relief</calcite-segmented-control-item>
+                  </calcite-segmented-control>
+                </div>
+                <div class="checkbox-row">
+                  <calcite-label layout="inline" scale="s"><calcite-checkbox id="env" checked scale="s"></calcite-checkbox>Enhanced environment</calcite-label>
+                  <calcite-label layout="inline" scale="s"><calcite-checkbox id="showTransportRoutes" checked scale="s"></calcite-checkbox>Transit routes</calcite-label>
+                  <calcite-label layout="inline" scale="s"><calcite-checkbox id="showHikingRoutes" checked scale="s"></calcite-checkbox>Hiking paths</calcite-label>
+                </div>
+              </div>
+            </calcite-block>
+          </calcite-block-group>
+
+          <div id="settingsFooter" slot="footer" class="settings-footer">
+            <div id="datasetRow" class="setting-row">
+              <label for="dataset">Dataset</label>
+              <calcite-select id="dataset" label="Dataset" scale="s"></calcite-select>
+            </div>
+            <calcite-fab id="autoplay" icon="play" text="Autoplay" hidden></calcite-fab>
+          </div>
+        </calcite-panel>
+      </arcgis-expand>
+    </arcgis-scene>
+
+    <div id="sidePane" class="content-pane side calcite-mode-dark">
+      <div id="listView" class="photos active"></div>
+      <div id="gridView" class="photos grid"></div>
+      <div id="timelineView" class="photos"></div>
+    </div>
+
+    <section id="sidePaneDetail" class="side-pane-detail calcite-mode-dark" role="dialog" aria-modal="true" aria-labelledby="sidePaneDetailTitle" tabindex="-1" hidden>
+      <img id="sidePaneDetailImage" alt="" />
+      <div class="side-pane-detail-caption">
+        <strong id="sidePaneDetailTitle"></strong>
+        <time id="sidePaneDetailTimestamp"></time>
+      </div>
+      <button id="sidePaneDetailPrevious" class="side-pane-detail-control previous" type="button" aria-label="Previous photo">
+        <calcite-icon icon="chevron-left" scale="m"></calcite-icon>
+      </button>
+      <button id="sidePaneDetailNext" class="side-pane-detail-control next" type="button" aria-label="Next photo">
+        <calcite-icon icon="chevron-right" scale="m"></calcite-icon>
+      </button>
+      <button id="sidePaneDetailClose" class="side-pane-detail-control close" type="button" aria-label="Close photo">
+        <calcite-icon icon="x" scale="m"></calcite-icon>
+      </button>
+    </section>
+
+    <div id="storyPane" class="content-pane story calcite-mode-dark" role="region" aria-label="Photo journey" tabindex="0">
+      <div id="storyPhotos" class="story-photo-stack">
+        <button id="storyPrevious" class="story-preview story-preview-previous" type="button" aria-label="Previous photo">
+          <img id="storyPreviousImage" alt="" />
+        </button>
+        <figure class="story-main-card">
+          <button id="storyMainButton" class="story-main-frame" type="button" aria-label="Enlarge current photo">
+            <img id="storyCurrentImage" class="story-main-image" alt="" />
+            <img id="storyIncomingImage" class="story-main-image story-main-incoming" alt="" />
+          </button>
+          <figcaption id="storyCaption" class="story-caption">
+            <strong id="storyTitle"></strong>
+            <time id="storyTimestamp"></time>
+          </figcaption>
+        </figure>
+        <button id="storyNext" class="story-preview story-preview-next" type="button" aria-label="Next photo">
+          <img id="storyNextImage" alt="" />
+        </button>
+      </div>
+      <div class="story-timeline" aria-hidden="true">
+        <time id="storyTimelineStart"></time>
+        <div class="story-timeline-track">
+          <span id="storyTimelineFill" class="story-timeline-fill story-timeline-time-fill">
+            <span class="story-timeline-marker"></span>
+          </span>
+          <span id="storyTimelinePhotoFill" class="story-timeline-fill story-timeline-photo-fill">
+            <span class="story-timeline-photo-marker"></span>
+          </span>
+        </div>
+        <time id="storyTimelineEnd"></time>
+        <span id="storyTimelineProgress" class="story-timeline-progress"></span>
+      </div>
+    </div>
+
+    <section id="flyover" class="flyover calcite-mode-dark">
+      <div class="flyover-dashboard">
+        <div class="flyover-route-stats">
+          <strong id="flyoverElevation">-- m asl</strong>
+          <strong id="flyoverDistance">-- / -- km</strong>
+        </div>
+        <div class="flyover-clock">
+          <time id="flyoverTime">--:--</time>
+          <time id="flyoverDate">--</time>
+        </div>
+        <div class="flyover-heading">
+          <strong id="flyoverHeading">--</strong>
+          <calcite-icon id="flyoverHeadingArrow" icon="arrow-up" scale="l"></calcite-icon>
+        </div>
+      </div>
+      <canvas id="flyoverElevationProfile" aria-label="Elevation profile"></canvas>
+      <div id="flyoverTimelineWrap" class="flyover-timeline-wrap">
+        <div class="flyover-timeline-track">
+          <div id="flyoverActivityStrip" aria-hidden="true"></div>
+          <calcite-slider id="flyoverTimeline" min="0" max="86400000" step="60000" page-step="3600000" ticks="10800000" label-ticks min-label="Time of day" fill-placement="start" scale="s"></calcite-slider>
+        </div>
+        <calcite-fab id="flyoverPlay" icon="play-f" text="Play" appearance="outline" scale="m"></calcite-fab>
+      </div>
+      <div id="flyoverEmpty" class="flyover-empty" hidden>No timestamped routes in this dataset.</div>
+      <strong id="flyoverPhotoTitle" class="flyover-photo-title"></strong>
+    </section>
+
+    <div id="environmentInfo" class="environment-info" hidden>
+      <strong id="environmentTitle"></strong>
+      <time id="environmentTimestamp"></time>
+    </div>
+
+    <div id="photoViewer" class="photo-viewer calcite-mode-dark" role="dialog" aria-modal="true" aria-labelledby="photoViewerTitle" tabindex="-1" hidden>
+      <figure id="photoViewerFigure" class="photo-viewer-figure">
+        <img id="photoViewerImage" alt="" />
+        <figcaption class="photo-viewer-caption">
+          <strong id="photoViewerTitle"></strong>
+          <time id="photoViewerTimestamp"></time>
+        </figcaption>
+      </figure>
+    </div>
+
+    <script type="module">
+      import { segmentedValue, setModeSettings, setupAutoplay, setupEnvironmentInfo, setupPhotoViewer, syncMaximizedMap } from "./UI.js";
+      import { setupMap } from "./map.js?route-style=9";
+      import { renderSidePaneMode, setPaneLayout, setSidePaneMode, setupSidePaneInteractions, sidePaneInteractionActive } from "./sidePaneMode.js";
+      import { renderScrollingMode, setScrollingMode, setupScrollingModeInteractions } from "./scrollingMode.js";
+      import { setupFollowMode } from "./followMode.js?camera-side=3";
+      import { loadDataset, loadTravelConfig, setDropboxClient } from "./data.js?route-style=4";
+      import { DROPBOX_CLIENT_ID, DROPBOX_REDIRECT_URI } from "../dropboxConfig.js";
+      import { parseLocalTimestamp } from "./utils.js";
+
+      const dbxAuth = new Dropbox.DropboxAuth({
+        clientId: DROPBOX_CLIENT_ID,
+      });
+      const accessToken = sessionStorage.getItem("travelbaseDropboxAccessToken");
+      if (accessToken) {
+        dbxAuth.setAccessToken(accessToken);
+        setDropboxClient(new Dropbox.Dropbox({ auth: dbxAuth }));
+      } else {
+        const authUrl = await dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI, undefined, "code", "offline", undefined, undefined, true);
+        sessionStorage.setItem("codeVerifier", dbxAuth.getCodeVerifier());
+        sessionStorage.setItem("travelbaseDropboxReturnTo", window.location.href);
+        window.location.replace(authUrl);
+      }
+
+      if (accessToken) {
+        const travelConfig = await loadTravelConfig();
+        let selectedDataset = travelConfig.defaultDataset ?? travelConfig.datasets[0]?.id;
+        let dataset = await loadDataset(selectedDataset, { routes: false });
+        let photoItems = dataset.photos;
+        let routeLoadVersion = 0;
+        let sidePaneDirty = true;
+        let storyPaneDirty = true;
+        let currentMode = "free";
+        let scrollFlyoverTimestamp = null;
+        let sidePaneInteractions;
+        let scrollingModeInteractions;
+        let autoplay;
+        const controls = {
+          basemap: document.getElementById("basemap"),
+          dataset: document.getElementById("dataset"),
+          environment: document.getElementById("env"),
+          freePhotoStyle: document.getElementById("freePhotoStyle"),
+          freePhotoTreatment: document.getElementById("freePhotoTreatment"),
+          flyoverCamera: document.getElementById("flyoverCamera"),
+          flyoverDay: document.getElementById("flyoverDay"),
+          flyoverDetail: document.getElementById("flyoverDetail"),
+          flyoverHeight: document.getElementById("flyoverHeight"),
+          flyoverSpeed: document.getElementById("flyoverSpeed"),
+          mapAreaControl: document.getElementById("mapAreaControl"),
+          mode: document.getElementById("mode"),
+          navigationToggle: document.getElementById("navigationToggle"),
+          paneOrder: document.getElementById("paneOrder"),
+          paneType: document.getElementById("paneType"),
+          photoSize: document.getElementById("photoSize"),
+          showHikingRoutes: document.getElementById("showHikingRoutes"),
+          showTransportRoutes: document.getElementById("showTransportRoutes"),
+          sideInteraction: document.getElementById("sideInteraction"),
+          scrollCamera: document.getElementById("scrollCamera"),
+          scrollSpeed: document.getElementById("scrollSpeed"),
+          settingsExpand: document.getElementById("settingsExpand"),
+          timelineMode: document.getElementById("timelineMode"),
+          timelinePacing: document.getElementById("timelinePacing"),
+          timelineSpeed: document.getElementById("timelineSpeed"),
+          visibleArea: document.getElementById("visibleArea"),
+        };
+
+        controls.dataset.replaceChildren(
+          ...travelConfig.datasets.map((source) => {
+            const option = document.createElement("calcite-option");
+            option.value = source.id;
+            option.textContent = source.label || source.id;
+            option.selected = source.id === selectedDataset;
+            return option;
+          }),
+        );
+        controls.dataset.value = selectedDataset;
+
+        function renderCurrentSidePane(paneType) {
+          renderSidePaneMode(photoItems, paneType, {
+            order: segmentedValue(controls.paneOrder, "config"),
+            visiblePhotoItems: segmentedValue(controls.visibleArea, "visible") === "visible" ? map.getVisiblePhotoItems() : null,
+          });
+          sidePaneDirty = false;
+        }
+
+        function setMode(value) {
+          autoplay?.stop();
+          controls.settingsExpand.autoCollapse = false;
+          if (value === "scroll") controls.settingsExpand.expanded = true;
+          const previousMode = currentMode;
+          if (previousMode === "flyover" && value === "scroll") {
+            scrollFlyoverTimestamp = followMode?.getCurrentTimestamp() ?? null;
+          }
+          const paneType = segmentedValue(controls.paneType, "list");
+          if (value === "side" && sidePaneDirty) {
+            renderCurrentSidePane(paneType);
+          } else if (value === "scroll" && storyPaneDirty) {
+            renderScrollingMode(photoItems, previousMode === "flyover" ? scrollFlyoverTimestamp : null);
+            storyPaneDirty = false;
+          }
+
+          setModeSettings(value);
+          setSidePaneMode(value, paneType);
+          if (previousMode === "side" && value !== "side") {
+            map?.stopSidePaneCamera();
+          }
+          if (previousMode === "scroll" && value !== "scroll") {
+            map?.stopSidePaneCamera();
+          }
+          if (previousMode === "flyover" && value === "scroll") {
+            scrollingModeInteractions?.showTimestamp(scrollFlyoverTimestamp);
+          }
+          setScrollingMode(value, { notify: false });
+          map?.setFreeExploreMode(value === "free");
+          followMode?.setMode(value, value === "flyover" && previousMode === "scroll" ? scrollFlyoverTimestamp : null);
+          currentMode = value;
+          map?.setSidePanePadding(value === "side" || value === "scroll", value === "scroll" ? "grid" : paneType, value === "scroll" ? "storyPane" : "sidePane");
+          if (value === "scroll") scrollingModeInteractions?.refreshCamera();
+        }
+
+        const showPhoto = setupPhotoViewer();
+        const showEnvironmentInfo = setupEnvironmentInfo();
+        const sideInteractionEnabled = (direction) => {
+          const value = segmentedValue(controls.sideInteraction, "both");
+          return value === "both" || value === direction;
+        };
+        const map = await setupMap(photoItems, {
+          sounds: travelConfig.sounds,
+          onMapPhotoHover: (photo) => {
+            if (segmentedValue(controls.mode, "free") !== "side") return;
+            const syncedPhoto = sideInteractionEnabled("map-panel") ? photo : null;
+            sidePaneInteractions?.showPhoto(syncedPhoto);
+            map?.indicateSidePanePhoto(syncedPhoto);
+          },
+          onPhotoHover: showEnvironmentInfo,
+          onPhotoSelect: showPhoto,
+          onVisibleAreaChange: () => {
+            if (segmentedValue(controls.visibleArea, "visible") === "visible" && segmentedValue(controls.mode, "free") === "side" && !sidePaneInteractionActive()) {
+              renderCurrentSidePane(segmentedValue(controls.paneType, "list"));
+            }
+          },
+        });
+        const followMode = await setupFollowMode({
+          scene: document.getElementById("scene"),
+          map,
+          controls,
+        });
+        followMode.setDataset(dataset);
+        sidePaneInteractions = setupSidePaneInteractions({
+          onPhotoHover: (photo) => {
+            if (sideInteractionEnabled("panel-map")) {
+              map.frameSidePanePhoto(photo);
+            }
+          },
+          onPhotoLeave: () => {
+            if (sideInteractionEnabled("panel-map")) map.leaveSidePanePhoto();
+          },
+          onPhotoSelect: (photo) => {
+            map.setSidePanePadding(true, "grid", "sidePaneDetail");
+            return map.focusSidePanePhoto(photo);
+          },
+          onPhotoClose: () => {
+            map.setSidePanePadding(true, segmentedValue(controls.paneType, "grid"));
+            return map.closeSidePanePhoto();
+          },
+        });
+        scrollingModeInteractions = setupScrollingModeInteractions({
+          onPhotoChange: (photo) => {
+            const time = parseLocalTimestamp(photo.timestamp);
+            scrollFlyoverTimestamp = Number.isFinite(time) ? time : null;
+            const behavior = segmentedValue(controls.scrollCamera, "hover");
+            controls.settingsExpand.autoCollapse = false;
+            if (behavior === "orbit") {
+              return map.orbitSidePanePhoto(photo);
+            } else if (behavior === "click") {
+              return map.focusSidePanePhoto(photo);
+            }
+            return map.frameSidePanePhoto(photo);
+          },
+          onPhotoOpen: showPhoto,
+          onDeactivate: () => {
+            controls.settingsExpand.autoCollapse = false;
+            map.stopSidePaneCamera();
+          },
+        });
+        autoplay = setupAutoplay({
+          advanceSide: (index, action) => sidePaneInteractions.autoplayPhoto(index, action),
+          startScroll: () => scrollingModeInteractions.startAutoplay(),
+          advanceScroll: () => scrollingModeInteractions.autoplayNext(),
+          scrollSpeed: () => segmentedValue(controls.scrollSpeed, "1"),
+          onSideHoverStop: () => {
+            sidePaneInteractions.showPhoto(null);
+            map.leaveSidePanePhoto();
+          },
+        });
+
+        async function setRoutesWhenReady(targetDataset, version) {
+          if (!targetDataset.loadRoutes) return;
+
+          try {
+            const routeData = await targetDataset.loadRoutes();
+            if (version !== routeLoadVersion) return;
+            Object.assign(targetDataset, routeData);
+            map.setRoutes(targetDataset);
+            followMode.setDataset(targetDataset);
+          } catch (error) {
+            if (version === routeLoadVersion) {
+              console.error("Unable to load routes", error);
+            }
+          }
+        }
+
+        setRoutesWhenReady(dataset, ++routeLoadVersion);
+
+        async function setDataset(value) {
+          if (value === selectedDataset) return;
+
+          autoplay.stop();
+          sidePaneInteractions.close();
+          selectedDataset = value;
+          const version = ++routeLoadVersion;
+          map.setRoutes({ tracks: [], paths: [] });
+          followMode.setDataset({ photos: [], tracks: [], paths: [] });
+          dataset = await loadDataset(value, { routes: false });
+          if (version !== routeLoadVersion) return;
+          photoItems = dataset.photos;
+          sidePaneDirty = true;
+          storyPaneDirty = true;
+          await map.setPhotoItems(photoItems);
+          map.setRoutes(dataset);
+          followMode.setDataset(dataset);
+          setMode(segmentedValue(controls.mode, "free"));
+          setRoutesWhenReady(dataset, version);
+        }
+
+        controls.mode.addEventListener("calciteSegmentedControlChange", (event) => setMode(segmentedValue(event.target, "free")));
+        controls.paneType.addEventListener("calciteSegmentedControlChange", (event) => {
+          autoplay.stop();
+          sidePaneInteractions.close();
+          const paneType = segmentedValue(event.target, "list");
+          if (segmentedValue(controls.mode, "free") === "side") {
+            renderCurrentSidePane(paneType);
+          }
+          setPaneLayout(paneType, segmentedValue(controls.mode, "free"));
+          requestAnimationFrame(() => map.setSidePanePadding(segmentedValue(controls.mode, "free") === "side", paneType));
+        });
+        controls.paneOrder.addEventListener("calciteSegmentedControlChange", () => {
+          sidePaneInteractions.close();
+          sidePaneDirty = true;
+          if (segmentedValue(controls.mode, "free") === "side") {
+            renderCurrentSidePane(segmentedValue(controls.paneType, "list"));
+          }
+        });
+        controls.sideInteraction.addEventListener("calciteSegmentedControlChange", () => {
+          if (!sideInteractionEnabled("map-panel")) {
+            sidePaneInteractions.showPhoto(null);
+          }
+          if (!sideInteractionEnabled("panel-map")) {
+            map.leaveSidePanePhoto();
+          }
+        });
+        controls.scrollCamera.addEventListener("calciteSegmentedControlChange", () => scrollingModeInteractions.refreshCamera());
+        controls.visibleArea.addEventListener("calciteSegmentedControlChange", () => {
+          sidePaneInteractions.close();
+          sidePaneDirty = true;
+          if (segmentedValue(controls.mode, "free") === "side") {
+            renderCurrentSidePane(segmentedValue(controls.paneType, "list"));
+          }
+        });
+        controls.basemap.addEventListener("calciteSegmentedControlChange", (event) => map.setBasemap(segmentedValue(event.target, "satellite")));
+        controls.mapAreaControl.addEventListener("calciteSegmentedControlChange", () => {
+          syncMaximizedMap();
+          requestAnimationFrame(() =>
+            map.setSidePanePadding(
+              ["side", "scroll"].includes(segmentedValue(controls.mode, "free")),
+              segmentedValue(controls.mode, "free") === "scroll" ? "grid" : segmentedValue(controls.paneType, "grid"),
+              segmentedValue(controls.mode, "free") === "scroll" ? "storyPane" : "sidePane",
+            ),
+          );
+        });
+        controls.freePhotoStyle.addEventListener("calciteSegmentedControlChange", (event) => map.setPhotoMarkerStyle(segmentedValue(event.target, "point")));
+        controls.freePhotoTreatment.addEventListener("calciteSegmentedControlChange", (event) => map.setPhotoMarkerTreatment(segmentedValue(event.target, "none")));
+        controls.photoSize.addEventListener("calciteSegmentedControlChange", (event) => map.setPhotoSize(segmentedValue(event.target, "0.9")));
+        controls.dataset.addEventListener("calciteSelectChange", (event) => setDataset(event.target.value));
+        controls.environment.addEventListener("calciteCheckboxChange", (event) => {
+          map.setEnhancedEnvironmentEnabled(event.target.checked);
+          followMode.setEnhancedEnvironmentEnabled(event.target.checked);
+        });
+        controls.timelineMode.addEventListener("calciteSegmentedControlChange", (event) => map.setTimelineMode(segmentedValue(event.target, "none")));
+        controls.timelinePacing.addEventListener("calciteSegmentedControlChange", (event) => map.setTimelinePacing(segmentedValue(event.target, "equal")));
+        controls.timelineSpeed.addEventListener("calciteSliderInput", (event) => map.setTimelineSpeed(event.target.value));
+        controls.showTransportRoutes.addEventListener("calciteCheckboxChange", (event) => map.setRouteVisibility("tracks", event.target.checked));
+        controls.showHikingRoutes.addEventListener("calciteCheckboxChange", (event) => map.setRouteVisibility("paths", event.target.checked));
+        function syncNavigationMode() {
+          controls.navigationToggle.dataset.mode = controls.navigationToggle.navigationMode || "pan";
+        }
+        controls.navigationToggle.addEventListener("click", () => requestAnimationFrame(syncNavigationMode));
+        setMode(segmentedValue(controls.mode, "free"));
+        map.setEnhancedEnvironmentEnabled(controls.environment.checked);
+        followMode.setEnhancedEnvironmentEnabled(controls.environment.checked);
+        map.setTimelineMode(segmentedValue(controls.timelineMode, "none"));
+        map.setTimelinePacing(segmentedValue(controls.timelinePacing, "equal"));
+        map.setTimelineSpeed(controls.timelineSpeed.value);
+        map.setPhotoMarkerStyle(segmentedValue(controls.freePhotoStyle, "point"));
+        map.setPhotoMarkerTreatment(segmentedValue(controls.freePhotoTreatment, "none"));
+        syncNavigationMode();
+      }
+    </script>
+  </body>
+</html>
