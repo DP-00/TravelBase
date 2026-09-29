@@ -28,6 +28,7 @@ function getAccessibleUrl(url) {
         .catch((error) => handleRateLimitedDropboxLink(path, error))
         .catch((error) => {
           temporaryLinks.delete(path);
+          console.error(`[PhotoTelling] Failed to get Dropbox temporary link for ${path}`, error);
           throw error;
         }),
     );
