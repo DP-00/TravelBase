@@ -5,7 +5,7 @@ const temporaryLinks = new Map();
 let dropboxClient;
 const largePhotoSetThreshold = 150;
 const photoLinkBatchSize = 30;
-const photoLinkBatchPauseMs = 300;
+const photoLinkBatchPauseMs = 400;
 
 const asArray = (value) => (Array.isArray(value) ? value : []);
 
@@ -285,18 +285,25 @@ export async function loadDataset(value, { routes = true } = {}) {
       .then(async (data) => {
         const dataset = resolveDatasetAssets(data, source.url, config.resolveUrl);
         let routeDataPromise;
-        const waitForLinks = async (requests) => {
-          const results = await Promise.allSettled(requests);
-          const failed = results.find((result) => result.status === "rejected");
-          if (failed) throw failed.reason;
-          return results.map((result) => result.value);
+        const assetErrors = new Map();
+        const recordAssetError = (url, error) => {
+          const parsedUrl = new URL(url);
+          const path = parsedUrl.hostname === "dropbox.local" ? decodeURIComponent(parsedUrl.pathname) : url;
+          assetErrors.set(path, `${path}: ${error?.message || String(error)}`);
         };
+        const resolveAsset = (url) =>
+          url
+            ? getAccessibleUrl(url).catch((error) => {
+                recordAssetError(url, error);
+                return null;
+              })
+            : url;
         const resolvePhotos = (photos) =>
-          waitForLinks(
+          Promise.all(
             photos.map(async (photo) => ({
               ...photo,
-              url: photo.url ? await getAccessibleUrl(photo.url) : photo.url,
-              soundPath: photo.soundPath ? await getAccessibleUrl(photo.soundPath) : photo.soundPath,
+              url: await resolveAsset(photo.url),
+              soundPath: await resolveAsset(photo.soundPath),
             })),
           );
         let photos;
@@ -313,9 +320,11 @@ export async function loadDataset(value, { routes = true } = {}) {
           for (let index = 0; index < linkRequests.length; index += photoLinkBatchSize) {
             const batch = linkRequests.slice(index, index + photoLinkBatchSize);
             console.info(`[PhotoTelling] ${value}: batch ${Math.floor(index / photoLinkBatchSize) + 1}/${batchCount}, requesting ${batch.length} links at once.`);
-            const resolvedUrls = await waitForLinks(batch.map((request) => getAccessibleUrl(request.url)));
+            const results = await Promise.allSettled(batch.map((request) => getAccessibleUrl(request.url)));
             batch.forEach((request, batchIndex) => {
-              photos[request.photoIndex][request.key] = resolvedUrls[batchIndex];
+              const result = results[batchIndex];
+              if (result.status === "rejected") recordAssetError(request.url, result.reason);
+              photos[request.photoIndex][request.key] = result.status === "fulfilled" ? result.value : null;
             });
             if (index + photoLinkBatchSize < linkRequests.length) {
               await new Promise((resolve) => setTimeout(resolve, photoLinkBatchPauseMs));
@@ -325,6 +334,9 @@ export async function loadDataset(value, { routes = true } = {}) {
           const linkCount = dataset.photos.reduce((count, photo) => count + Number(Boolean(photo.url)) + Number(Boolean(photo.soundPath)), 0);
           console.info(`[PhotoTelling] ${value}: ${dataset.photos.length} photo files; requesting ${linkCount} Dropbox links at once.`);
           photos = await resolvePhotos(dataset.photos);
+        }
+        if (assetErrors.size) {
+          window.alert(`Some Dropbox assets could not be loaded for ${value}:\n\n${[...assetErrors.values()].join("\n")}`);
         }
         return {
           photos,

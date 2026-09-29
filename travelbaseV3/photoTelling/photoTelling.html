@@ -10,6 +10,9 @@
     <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
   </head>
   <body class="calcite-mode-dark">
+    <div id="datasetLoading" class="dataset-loading" role="status" aria-live="polite">
+      <calcite-loader active label="Loading dataset" text="" type="indeterminate" scale="l"></calcite-loader>
+    </div>
     <arcgis-scene id="scene" basemap="satellite" ground="world-elevation" camera-position="8.22, 46.82, 78000" camera-tilt="62" camera-heading="18" popup-disabled>
       <arcgis-home slot="top-right" visual-scale="s"></arcgis-home>
       <arcgis-zoom slot="top-right" visual-scale="s"></arcgis-zoom>
@@ -336,6 +339,7 @@
       import { DROPBOX_CLIENT_ID, DROPBOX_REDIRECT_URI } from "../dropboxConfig.js";
       import { parseLocalTimestamp } from "./utils.js";
 
+      const datasetLoading = document.getElementById("datasetLoading");
       const dbxAuth = new Dropbox.DropboxAuth({
         clientId: DROPBOX_CLIENT_ID,
       });
@@ -543,22 +547,28 @@
         async function setDataset(value) {
           if (value === selectedDataset) return;
 
+          datasetLoading.hidden = false;
+          await new Promise((resolve) => requestAnimationFrame(resolve));
           autoplay.stop();
           sidePaneInteractions.close();
           selectedDataset = value;
           const version = ++routeLoadVersion;
           map.setRoutes({ tracks: [], paths: [] });
           followMode.setDataset({ photos: [], tracks: [], paths: [] });
-          dataset = await loadDataset(value, { routes: false });
-          if (version !== routeLoadVersion) return;
-          photoItems = dataset.photos;
-          sidePaneDirty = true;
-          storyPaneDirty = true;
-          await map.setPhotoItems(photoItems);
-          map.setRoutes(dataset);
-          followMode.setDataset(dataset);
-          setMode(segmentedValue(controls.mode, "free"));
-          setRoutesWhenReady(dataset, version);
+          try {
+            dataset = await loadDataset(value, { routes: false });
+            if (version !== routeLoadVersion) return;
+            photoItems = dataset.photos;
+            sidePaneDirty = true;
+            storyPaneDirty = true;
+            await map.setPhotoItems(photoItems);
+            map.setRoutes(dataset);
+            followMode.setDataset(dataset);
+            setMode(segmentedValue(controls.mode, "free"));
+            setRoutesWhenReady(dataset, version);
+          } finally {
+            if (version === routeLoadVersion) datasetLoading.hidden = true;
+          }
         }
 
         controls.mode.addEventListener("calciteSegmentedControlChange", (event) => setMode(segmentedValue(event.target, "free")));
@@ -632,6 +642,7 @@
         map.setPhotoMarkerStyle(segmentedValue(controls.freePhotoStyle, "point"));
         map.setPhotoMarkerTreatment(segmentedValue(controls.freePhotoTreatment, "none"));
         syncNavigationMode();
+        datasetLoading.hidden = true;
       }
     </script>
   </body>

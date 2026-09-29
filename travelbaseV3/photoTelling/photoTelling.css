@@ -11,6 +11,20 @@ body {
   color-scheme: dark;
 }
 
+.dataset-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  --calcite-loader-progress-color: var(--journey-green-light);
+}
+
+.dataset-loading[hidden] {
+  display: none;
+}
+
 :root {
   --journey-green: #090e0d;
   --journey-green-mid: #192a27;
@@ -41,10 +55,7 @@ arcgis-expand {
   color: var(--journey-green-light);
   border: 3px solid var(--journey-green-light);
   border-radius: 4px;
-  filter: drop-shadow(0.35px 0 var(--journey-green-light))
-    drop-shadow(-0.35px 0 var(--journey-green-light))
-    drop-shadow(0 0 1px var(--journey-green))
-    drop-shadow(0 0 3px var(--journey-green));
+  filter: drop-shadow(0.35px 0 var(--journey-green-light)) drop-shadow(-0.35px 0 var(--journey-green-light)) drop-shadow(0 0 1px var(--journey-green)) drop-shadow(0 0 3px var(--journey-green));
 }
 
 arcgis-expand calcite-panel {
@@ -527,20 +538,12 @@ body.map-area-narrow .grid-photo {
   right: -2px;
   width: calc(100% + 2px);
   height: 3px;
-  background: repeating-linear-gradient(
-    to left,
-    rgba(174, 216, 204, 0.64) 0 8px,
-    transparent 8px 15px
-  );
+  background: repeating-linear-gradient(to left, rgba(174, 216, 204, 0.64) 0 8px, transparent 8px 15px);
   content: "";
 }
 
 .timeline-gap.same-day::before {
-  background: repeating-linear-gradient(
-    to left,
-    rgba(174, 216, 204, 0.86) 0 8px,
-    transparent 8px 15px
-  );
+  background: repeating-linear-gradient(to left, rgba(174, 216, 204, 0.86) 0 8px, transparent 8px 15px);
 }
 
 .timeline-photo.same-day .photo {
@@ -902,10 +905,8 @@ body.map-area-wide .story-preview {
   height: 100%;
   min-height: 60px;
   background:
-    linear-gradient(rgba(174, 216, 204, 0.22), rgba(174, 216, 204, 0.22)) left /
-      2px 100% no-repeat,
-    linear-gradient(rgba(25, 42, 39, 0.56), rgba(25, 42, 39, 0.56)) right / 2px
-      100% no-repeat;
+    linear-gradient(rgba(174, 216, 204, 0.22), rgba(174, 216, 204, 0.22)) left / 2px 100% no-repeat,
+    linear-gradient(rgba(25, 42, 39, 0.56), rgba(25, 42, 39, 0.56)) right / 2px 100% no-repeat;
 }
 
 .story-timeline-fill {
@@ -1059,8 +1060,7 @@ body.map-area-wide .story-preview {
 
 #flyoverHeadingArrow {
   color: var(--journey-green-light);
-  filter: drop-shadow(0 0 1px #aed8cc) drop-shadow(0 0 1px #aed8cc)
-    drop-shadow(0 2px 2px #192a27) drop-shadow(0 0 4px #192a27);
+  filter: drop-shadow(0 0 1px #aed8cc) drop-shadow(0 0 1px #aed8cc) drop-shadow(0 2px 2px #192a27) drop-shadow(0 0 4px #192a27);
   transform-origin: center;
 }
 
